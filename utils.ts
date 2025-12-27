@@ -1,6 +1,7 @@
 import { Car, Rental, CarStatus } from './types';
 import jsPDF from 'jspdf';
 import arabicFontUrl from './fonts/NotoSansArabic-Regular.ttf?url';
+import reshape from 'arabic-reshaper';
 
 export const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('ar-JO', {
@@ -60,7 +61,8 @@ export const generateInvoicePDF = async (rental: Rental, car: Car) => {
 
   const writeText = (text: string, x: number, y: number, align: 'left' | 'center' | 'right' = 'left') => {
     const rtl = isArabicText(text);
-    doc.text(text, x, y, { align, isInputRtl: rtl });
+    const shaped = rtl ? reshape(text) : text;
+    doc.text(shaped, x, y, { align, isInputRtl: rtl });
   };
   
   // Header
