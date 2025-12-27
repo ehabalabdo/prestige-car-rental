@@ -1,9 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { pdf } from '@react-pdf/renderer';
+import { jsPDF } from 'jspdf';
 import { Car, Rental, CarStatus, RentalStatus } from '../types';
 import { generateId, formatCurrency, calculateDays } from '../utils';
-import PaymentReceiptPDF from './PaymentReceiptPDF';
 import { User, Phone, Clock, ArrowRightLeft, AlertCircle, Gauge, PlusCircle, Banknote, Printer } from 'lucide-react';
 import Modal from './Modal';
 
@@ -337,15 +336,26 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
                           {car && (
                             <button
                               title="طباعة سند قبض"
-                              onClick={async () => {
+                              onClick={() => {
                                 try {
-                                  const receiptBlob = await pdf(<PaymentReceiptPDF rental={rental} car={car} payment={pmt} />).toBlob();
-                                  const url = URL.createObjectURL(receiptBlob);
-                                  const link = document.createElement('a');
-                                  link.href = url;
-                                  link.download = `Receipt_${rental.id}_${pmt.id}.pdf`;
-                                  link.click();
-                                  URL.revokeObjectURL(url);
+                                  const doc = new jsPDF();
+                                  doc.setFontSize(18);
+                                  doc.text('PAYMENT RECEIPT', 105, 20, { align: 'center' });
+                                  
+                                  doc.setFontSize(12);
+                                  let y = 40;
+                                  doc.text(`Contract ID: ${rental.id.toUpperCase()}`, 20, y); y += 10;
+                                  doc.text(`Date: ${new Date(pmt.date).toLocaleDateString()}`, 20, y); y += 10;
+                                  doc.text(`Customer: ${rental.customer.name}`, 20, y); y += 10;
+                                  doc.text(`Vehicle: ${car.make} ${car.model} - ${car.plate}`, 20, y); y += 10;
+                                  if (pmt.note) {
+                                    doc.text(`Note: ${pmt.note}`, 20, y); y += 10;
+                                  }
+                                  
+                                  doc.setFontSize(14);
+                                  doc.text(`Amount Received: ${formatCurrency(pmt.amount)}`, 20, y + 10);
+                                  
+                                  doc.save(`Receipt_${rental.id}_${pmt.id}.pdf`);
                                 } catch (error) {
                                   console.error('Receipt generation failed:', error);
                                   alert('فشل إنشاء السند');

@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { pdf } from '@react-pdf/renderer';
+import { jsPDF } from 'jspdf';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import Cars from './components/Cars';
 import Rentals from './components/Rentals';
 import History from './components/History';
 import Maintenance from './components/Maintenance';
-import InvoicePDF from './components/InvoicePDF';
-import PaymentReceiptPDF from './components/PaymentReceiptPDF';
 import { Menu } from 'lucide-react';
 import { Car, Rental, CarStatus, RentalStatus } from './types';
-import { getInitialData } from './utils';
+import { getInitialData, formatCurrency, calculateDays } from './utils';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase';
 import {
@@ -253,33 +251,59 @@ const App: React.FC = () => {
        } : c);
        setCars(updatedCars);
        
-       // Generate invoice PDF
-       const generatePDFs = async () => {
-         try {
-           const invoiceBlob = await pdf(<InvoicePDF rental={completedRental} car={car} />).toBlob();
-           const invoiceUrl = URL.createObjectURL(invoiceBlob);
-           const invoiceLink = document.createElement('a');
-           invoiceLink.href = invoiceUrl;
-           invoiceLink.download = `Invoice_${completedRental.id}.pdf`;
-           invoiceLink.click();
-           URL.revokeObjectURL(invoiceUrl);
-
-           // Generate payment receipts
-           for (const payment of completedRental.payments || []) {
-             const receiptBlob = await pdf(<PaymentReceiptPDF rental={completedRental} car={car} payment={payment} />).toBlob();
-             const receiptUrl = URL.createObjectURL(receiptBlob);
-             const receiptLink = document.createElement('a');
-             receiptLink.href = receiptUrl;
-             receiptLink.download = `Receipt_${completedRental.id}_${payment.id}.pdf`;
-             receiptLink.click();
-             URL.revokeObjectURL(receiptUrl);
+       // Generate invoice PDF with jsPDF
+       try {
+         const doc = new jsPDF();
+         const finesTotal = (completedRental.fines || []).reduce((s,f)=>s+f.amount,0);
+         const paymentsTotal = (completedRental.payments || []).reduce((s,p)=>s+p.amount,0);
+         const outstanding = completedRental.totalCost - paymentsTotal;
+         
+         doc.setFontSize(20);
+         doc.text('RENTAL INVOICE', 105, 20, { align: 'center' });
+         
+         doc.setFontSize(12);
+         let y = 40;
+         doc.text(`Invoice ID: ${completedRental.id.toUpperCase()}`, 20, y); y += 10;
+         doc.text(`Customer: ${completedRental.customer.name}`, 20, y); y += 10;
+         doc.text(`Phone: ${completedRental.customer.phone}`, 20, y); y += 10;
+         doc.text(`Vehicle: ${car.make} ${car.model} (${car.year})`, 20, y); y += 10;
+         doc.text(`Plate: ${car.plate}`, 20, y); y += 10;
+         doc.text(`Start: ${new Date(completedRental.startDate).toLocaleDateString()}`, 20, y); y += 10;
+         doc.text(`End: ${completedRental.actualEndDate ? new Date(completedRental.actualEndDate).toLocaleDateString() : '-'}`, 20, y); y += 15;
+         
+         doc.text(`Base Cost: ${formatCurrency(completedRental.baseCost || completedRental.totalCost)}`, 20, y); y += 10;
+         doc.text(`Fines: ${formatCurrency(finesTotal)}`, 20, y); y += 10;
+         doc.text(`Payments: ${formatCurrency(paymentsTotal)}`, 20, y); y += 15;
+         
+         doc.setFontSize(14);
+         doc.text(`Total Outstanding: ${formatCurrency(outstanding)}`, 20, y);
+         
+         doc.save(`Invoice_${completedRental.id}.pdf`);
+         
+         // Generate payment receipts
+         for (const payment of completedRental.payments || []) {
+           const receiptDoc = new jsPDF();
+           receiptDoc.setFontSize(18);
+           receiptDoc.text('PAYMENT RECEIPT', 105, 20, { align: 'center' });
+           
+           receiptDoc.setFontSize(12);
+           let ry = 40;
+           receiptDoc.text(`Contract ID: ${completedRental.id.toUpperCase()}`, 20, ry); ry += 10;
+           receiptDoc.text(`Date: ${new Date(payment.date).toLocaleDateString()}`, 20, ry); ry += 10;
+           receiptDoc.text(`Customer: ${completedRental.customer.name}`, 20, ry); ry += 10;
+           receiptDoc.text(`Vehicle: ${car.make} ${car.model} - ${car.plate}`, 20, ry); ry += 10;
+           if (payment.note) {
+             receiptDoc.text(`Note: ${payment.note}`, 20, ry); ry += 10;
            }
-         } catch (error) {
-           console.error('PDF generation failed:', error);
+           
+           receiptDoc.setFontSize(14);
+           receiptDoc.text(`Amount Received: ${formatCurrency(payment.amount)}`, 20, ry + 10);
+           
+           receiptDoc.save(`Receipt_${completedRental.id}_${payment.id}.pdf`);
          }
-       };
-       
-       void generatePDFs();
+       } catch (error) {
+         console.error('PDF generation failed:', error);
+       }
        
        if (exceededMaintenance) {
          alert('تنبيه: المركبة تجاوزت عداد الصيانة وتحتاج إلى صيانة');
