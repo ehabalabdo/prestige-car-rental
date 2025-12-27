@@ -332,7 +332,6 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
                           {pmt.note && <span className="text-gray-400 ml-2">— {pmt.note}</span>}
                         </div>
                       ))}
-                      ))}
                     </div>
                   </div>
                 )}
