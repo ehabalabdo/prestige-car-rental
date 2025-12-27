@@ -13,7 +13,9 @@ export interface Car {
   color: string;
   dailyRate: number;
   currentMileage: number;
-  nextMaintenanceMileage: number;
+  nextMaintenanceMileage: number; // legacy
+  maintenanceIntervalKm?: number; // e.g., 8000
+  lastMaintenanceMileage?: number; // mileage at last service
   image: string;
   status: CarStatus;
 }
@@ -40,7 +42,8 @@ export interface Rental {
   startMileage: number;
   endMileage?: number;
   baseCost: number;
-  fineAmount?: number;
+  fines?: Array<{ id: string; amount: number; date: string; note?: string }>;
+  payments?: Array<{ id: string; amount: number; date: string; note?: string }>;
   totalCost: number;
   status: RentalStatus;
 }

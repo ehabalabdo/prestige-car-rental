@@ -7,7 +7,7 @@ import History from './components/History';
 import Maintenance from './components/Maintenance';
 import { Menu } from 'lucide-react';
 import { Car, Rental, CarStatus, RentalStatus } from './types';
-import { getInitialData, generateInvoicePDF } from './utils';
+import { getInitialData, generateInvoicePDF, generatePaymentReceiptPDF } from './utils';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase';
 import {
@@ -190,7 +190,13 @@ const App: React.FC = () => {
     }
   };
   const updateCarStatus = (id: string, status: CarStatus) => {
-    const updatedCars = cars.map(c => c.id === id ? { ...c, status } : c);
+    const updatedCars = cars.map(c => {
+      if (c.id !== id) return c;
+      if (c.status === CarStatus.MAINTENANCE && status === CarStatus.AVAILABLE) {
+        return { ...c, status, lastMaintenanceMileage: c.currentMileage };
+      }
+      return { ...c, status };
+    });
     setCars(updatedCars);
     const updatedCar = updatedCars.find(c => c.id === id);
     if (updatedCar && isAuthenticated) {
@@ -234,7 +240,9 @@ const App: React.FC = () => {
     setRentals(rentals.filter(r => r.id !== rentalId));
     const car = cars.find(c => c.id === rental.carId);
     if (car) {
-       const exceededMaintenance = car.nextMaintenanceMileage !== undefined && endMileage >= car.nextMaintenanceMileage;
+       const interval = car.maintenanceIntervalKm ?? 0;
+       const lastService = car.lastMaintenanceMileage ?? car.currentMileage ?? 0;
+       const exceededMaintenance = interval > 0 && (endMileage - lastService) >= interval;
        const updatedCars = cars.map(c => c.id === rental.carId ? { 
          ...c, 
          status: exceededMaintenance ? CarStatus.MAINTENANCE : CarStatus.AVAILABLE, 
@@ -242,6 +250,9 @@ const App: React.FC = () => {
        } : c);
        setCars(updatedCars);
        void generateInvoicePDF(completedRental, car);
+       (completedRental.payments || []).forEach(p => {
+         void generatePaymentReceiptPDF(completedRental, car, p);
+       });
        if (exceededMaintenance) {
          alert('تنبيه: المركبة تجاوزت عداد الصيانة وتحتاج إلى صيانة');
        }
@@ -265,12 +276,12 @@ const App: React.FC = () => {
         const currentEndDate = new Date(r.expectedEndDate);
         currentEndDate.setDate(currentEndDate.getDate() + additionalDays);
         const newBaseCost = (r.baseCost || r.totalCost) + (dailyRate * additionalDays);
-        const fineAmount = r.fineAmount || 0;
+        const finesTotal = (r.fines || []).reduce((sum, f) => sum + f.amount, 0);
         const updatedRental = {
           ...r,
           expectedEndDate: currentEndDate.toISOString(),
           baseCost: newBaseCost,
-          totalCost: newBaseCost + fineAmount
+          totalCost: newBaseCost + finesTotal
         };
         if (isAuthenticated) addRentalToFirestore(updatedRental).catch(err => console.warn('Failed to sync rental:', err));
         return updatedRental;

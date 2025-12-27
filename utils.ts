@@ -59,8 +59,18 @@ export const generateInvoicePDF = async (rental: Rental, car: Car) => {
       <div class="row"><span class="label">تاريخ التسليم</span><span class="value">${rental.actualEndDate ? new Date(rental.actualEndDate).toLocaleDateString() : '-'}</span></div>
       <div class="row"><span class="label">المدة (يوم)</span><span class="value">${days}</span></div>
       <div class="row"><span class="label">التكلفة قبل المخالفات</span><span class="value">${formatCurrency(rental.baseCost)}</span></div>
-      <div class="row"><span class="label">قيمة المخالفات</span><span class="value">${formatCurrency(rental.fineAmount || 0)}</span></div>
-      <div class="total">الإجمالي المستحق: ${formatCurrency(rental.totalCost)}</div>
+      <div class="section">
+        <div class="row"><span class="label">المخالفات</span><span class="value">${formatCurrency((rental.fines || []).reduce((s,f)=>s+(f.amount||0),0))}</span></div>
+        ${(rental.fines || []).map(f => `<div class="row"><span class="label">- ${new Date(f.date).toLocaleDateString()}${f.note ? ' — ' + f.note : ''}</span><span class="value">${formatCurrency(f.amount)}</span></div>`).join('')}
+      </div>
+      <div class="section">
+        <div class="row"><span class="label">الدفعات</span><span class="value">${formatCurrency((rental.payments || []).reduce((s,p)=>s+(p.amount||0),0))}</span></div>
+        ${(rental.payments || []).map(p => `<div class="row"><span class="label">- ${new Date(p.date).toLocaleDateString()}${p.note ? ' — ' + p.note : ''}</span><span class="value">${formatCurrency(p.amount)}</span></div>`).join('')}
+      </div>
+      <div class="row"><span class="label">الإجمالي قبل الدفعات</span><span class="value">${formatCurrency(rental.totalCost)}</span></div>
+      <div class="row"><span class="label">المسدّد</span><span class="value">${formatCurrency((rental.payments || []).reduce((s,p)=>s+(p.amount||0),0))}</span></div>
+      <div class="row"><span class="label">المتبقي</span><span class="value">${formatCurrency(rental.totalCost - (rental.payments || []).reduce((s,p)=>s+(p.amount||0),0))}</span></div>
+      <div class="total">الإجمالي المستحق: ${formatCurrency(rental.totalCost - (rental.payments || []).reduce((s,p)=>s+(p.amount||0),0))}</div>
     </div>
   `;
 
@@ -72,6 +82,57 @@ export const generateInvoicePDF = async (rental: Rental, car: Car) => {
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2, useCORS: true },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  } as const;
+
+  await html2pdf().set(opts).from(container).save();
+  container.remove();
+};
+
+export const generatePaymentReceiptPDF = async (rental: Rental, car: Car, payment: { id?: string; amount: number; date: string; note?: string }) => {
+  const existing = document.getElementById('payment-receipt-print');
+  if (existing) existing.remove();
+
+  const container = document.createElement('div');
+  container.id = 'payment-receipt-print';
+  container.style.position = 'fixed';
+  container.style.left = '-9999px';
+  container.style.top = '0';
+  container.style.width = '594px';
+  container.style.background = '#fff';
+  container.style.direction = 'rtl';
+  container.style.textAlign = 'right';
+  container.style.fontFamily = 'Cairo, Tajawal, sans-serif';
+
+  container.innerHTML = `
+    <style>
+      #payment-receipt-print * { box-sizing: border-box; }
+      #payment-receipt-print .header { background:#111; color:#d4af37; padding:20px; text-align:center; font-size:20px; font-weight:700; }
+      #payment-receipt-print .body { padding:24px 28px 32px; color:#111; }
+      #payment-receipt-print .row { display:flex; justify-content:space-between; margin-bottom:10px; font-size:14px; gap:12px; }
+      #payment-receipt-print .label { color:#555; font-weight:600; }
+      #payment-receipt-print .value { color:#000; }
+      #payment-receipt-print .total { margin-top:16px; padding-top:12px; border-top:1px solid #444; text-align:right; color:#d4af37; font-size:16px; font-weight:700; }
+    </style>
+    <div class="header">سند قبض دفعة</div>
+    <div class="body">
+      <div class="row"><span class="label">رقم العقد</span><span class="value">${rental.id.toUpperCase()}</span></div>
+      <div class="row"><span class="label">تاريخ السند</span><span class="value">${new Date(payment.date).toLocaleDateString()}</span></div>
+      <div class="row"><span class="label">العميل</span><span class="value">${rental.customer.name}</span></div>
+      <div class="row"><span class="label">الهاتف</span><span class="value">${rental.customer.phone}</span></div>
+      <div class="row"><span class="label">المركبة</span><span class="value">${car.make} ${car.model} (${car.year}) — ${car.plate}</span></div>
+      ${payment.note ? `<div class="row"><span class="label">ملاحظة</span><span class="value">${payment.note}</span></div>` : ''}
+      <div class="total">المبلغ المقبوض: ${formatCurrency(payment.amount)}</div>
+    </div>
+  `;
+
+  document.body.appendChild(container);
+
+  const opts = {
+    margin: 10,
+    filename: `Receipt_${rental.id}_${payment.id || generateId()}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' }
   } as const;
 
   await html2pdf().set(opts).from(container).save();

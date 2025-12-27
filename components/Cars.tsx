@@ -18,14 +18,16 @@ const Cars: React.FC<CarsProps> = ({ cars, onAddCar, onDeleteCar, onUpdateStatus
     status: CarStatus.AVAILABLE,
     image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800',
     currentMileage: undefined,
-    nextMaintenanceMileage: undefined
+    maintenanceIntervalKm: 8000,
+    nextMaintenanceMileage: undefined,
+    lastMaintenanceMileage: undefined
   });
   const [editingCarId, setEditingCarId] = useState<string | null>(null);
 
   const resetForm = () => {
     setIsModalOpen(false);
     setEditingCarId(null);
-    setNewCar({ status: CarStatus.AVAILABLE, image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800', currentMileage: undefined, nextMaintenanceMileage: undefined });
+    setNewCar({ status: CarStatus.AVAILABLE, image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800', currentMileage: undefined, maintenanceIntervalKm: 8000, nextMaintenanceMileage: undefined, lastMaintenanceMileage: undefined });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -34,11 +36,7 @@ const Cars: React.FC<CarsProps> = ({ cars, onAddCar, onDeleteCar, onUpdateStatus
 
     const mileage = Number(newCar.currentMileage);
     if (Number.isNaN(mileage)) return;
-    const maintenanceOdometer = newCar.nextMaintenanceMileage !== undefined ? Number(newCar.nextMaintenanceMileage) : mileage + 10000;
-    if (maintenanceOdometer < mileage) {
-      alert('عداد الصيانة يجب أن يكون أكبر من العداد الحالي');
-      return;
-    }
+    const interval = newCar.maintenanceIntervalKm !== undefined ? Number(newCar.maintenanceIntervalKm) : 8000;
 
     if (editingCarId) {
       const existing = cars.find(c => c.id === editingCarId);
@@ -55,7 +53,8 @@ const Cars: React.FC<CarsProps> = ({ cars, onAddCar, onDeleteCar, onUpdateStatus
         color: newCar.color || existing.color,
         dailyRate: Number(newCar.dailyRate),
         currentMileage: mileage,
-        nextMaintenanceMileage: maintenanceOdometer,
+        maintenanceIntervalKm: interval,
+        lastMaintenanceMileage: newCar.lastMaintenanceMileage ?? existing.lastMaintenanceMileage ?? mileage,
         image: newCar.image || existing.image
       };
       onUpdateCar(updatedCar);
@@ -72,7 +71,8 @@ const Cars: React.FC<CarsProps> = ({ cars, onAddCar, onDeleteCar, onUpdateStatus
       color: newCar.color || 'أسود',
       dailyRate: Number(newCar.dailyRate),
       currentMileage: mileage,
-      nextMaintenanceMileage: maintenanceOdometer,
+      maintenanceIntervalKm: interval,
+      lastMaintenanceMileage: mileage,
       image: newCar.image || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800',
       status: CarStatus.AVAILABLE
     };
@@ -127,8 +127,12 @@ const Cars: React.FC<CarsProps> = ({ cars, onAddCar, onDeleteCar, onUpdateStatus
                    <span>{(car.currentMileage ?? 0).toLocaleString()} كم</span>
                 </div>
                  <div className="flex items-center gap-2 text-[11px] text-gold-400 font-semibold">
-                   <span>الصيانة عند</span>
-                   <span>{(car.nextMaintenanceMileage ?? 0).toLocaleString()} كم</span>
+                   <span>الصيانة كل</span>
+                   <span>{(car.maintenanceIntervalKm ?? 8000).toLocaleString()} كم</span>
+                 </div>
+                 <div className="flex items-center gap-2 text-[11px] text-gray-400">
+                   <span>آخر صيانة عند</span>
+                   <span>{(car.lastMaintenanceMileage ?? car.currentMileage ?? 0).toLocaleString()} كم</span>
                  </div>
                 <div className="flex items-center gap-2">
                    <div className="w-2.5 h-2.5 rounded-full border border-gray-600" style={{ backgroundColor: car.color }}></div>
@@ -217,9 +221,9 @@ const Cars: React.FC<CarsProps> = ({ cars, onAddCar, onDeleteCar, onUpdateStatus
                     }} placeholder="مثال: 35000" />
                 </div>
                 <div>
-                  <label className="block text-gray-400 mb-1 text-sm">عداد الصيانة القادم (كم)</label>
+                  <label className="block text-gray-400 mb-1 text-sm">فترة الصيانة كل (كم)</label>
                   <input required type="number" className="w-full bg-black-900 border border-white/10 rounded-lg p-3 text-white focus:border-gold-500 outline-none" 
-                    value={newCar.nextMaintenanceMileage ?? ''} onChange={e => setNewCar({...newCar, nextMaintenanceMileage: e.target.value === '' ? undefined : Number(e.target.value)})} placeholder="مثال: 45000" />
+                    value={newCar.maintenanceIntervalKm ?? 8000} onChange={e => setNewCar({...newCar, maintenanceIntervalKm: Number(e.target.value)})} placeholder="مثال: 8000" />
                 </div>
               </div>
               <div>
