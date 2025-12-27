@@ -23,6 +23,9 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
   const [isFineModalOpen, setIsFineModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   
+  // Force re-render when day changes for status updates
+  const [today, setToday] = useState(new Date().toISOString().split('T')[0]);
+  
   const [selectedCarId, setSelectedCarId] = useState('');
   const [selectedRentalForReturn, setSelectedRentalForReturn] = useState<Rental | null>(null);
   const [selectedRentalForExtend, setSelectedRentalForExtend] = useState<Rental | null>(null);
@@ -61,6 +64,33 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
       setIsRentModalOpen(true);
     }
   }, [initialSelectedCarId, cars]);
+
+  // Update today at midnight to refresh rental statuses
+  useEffect(() => {
+    const updateToday = () => {
+      setToday(new Date().toISOString().split('T')[0]);
+    };
+
+    // Update immediately
+    updateToday();
+
+    // Calculate time until next midnight
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    const timeUntilMidnight = tomorrow.getTime() - now.getTime();
+
+    // Schedule next update at midnight
+    const timer = setTimeout(() => {
+      updateToday();
+      // After first update, refresh every 24 hours
+      const dailyInterval = setInterval(updateToday, 24 * 60 * 60 * 1000);
+      return () => clearInterval(dailyInterval);
+    }, timeUntilMidnight);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const availableCars = cars.filter(c => c.status === CarStatus.AVAILABLE);
   const selectedCar = cars.find(c => c.id === selectedCarId);
