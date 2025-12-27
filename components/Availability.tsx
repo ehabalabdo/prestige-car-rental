@@ -39,15 +39,17 @@ const Availability: React.FC<AvailabilityProps> = ({ cars, rentals }) => {
       if (rental.carId !== carId) return false;
       if (rental.status !== RentalStatus.ACTIVE) return false; // Only active rentals
       
+      // Create new date objects to avoid mutation
+      const check = new Date(checkDate);
       const startDate = new Date(rental.startDate);
       const endDate = new Date(rental.expectedEndDate || rental.startDate);
       
       // Set time to midnight for accurate day comparison
-      checkDate.setHours(0, 0, 0, 0);
+      check.setHours(0, 0, 0, 0);
       startDate.setHours(0, 0, 0, 0);
       endDate.setHours(23, 59, 59, 999);
       
-      return checkDate >= startDate && checkDate <= endDate;
+      return check >= startDate && check <= endDate;
     });
 
     return activeRental ? 'reserved' : 'available';
