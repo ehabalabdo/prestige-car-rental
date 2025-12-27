@@ -1,21 +1,8 @@
 import React from 'react';
 import { Car, Rental, CarStatus } from '../types';
 import { CarFront, Banknote, CalendarCheck, Activity, CheckCircle2, Clock, AlertTriangle, ChevronLeft, ShieldCheck } from 'lucide-react';
-import { formatCurrency } from '../utils';
+import { formatCurrency, formatDateNumeric } from '../utils';
 
-// Local numeric date formatter (DD/MM/YYYY) to avoid runtime import issues
-const formatDateNumericSafe = (value: any): string => {
-  try {
-    const d = new Date(value);
-    if (isNaN(d.getTime())) return '';
-    const day = d.getDate();
-    const month = d.getMonth() + 1;
-    const year = d.getFullYear();
-    return `${day}/${month}/${year}`;
-  } catch {
-    return '';
-  }
-};
 
 interface DashboardProps {
   cars?: Car[];
@@ -62,7 +49,7 @@ const Dashboard: React.FC<DashboardProps> = ({ cars = [], rentals = [], history 
             </div>
         </div>
         <div className="bg-black-800 px-5 py-2.5 rounded-2xl border border-white/5 text-[10px] text-gold-500 font-bold shadow-inner">
-          {formatDateNumericSafe(new Date())}
+          {formatDateNumeric(new Date())}
         </div>
       </header>
 
