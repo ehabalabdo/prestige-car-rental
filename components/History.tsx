@@ -1,7 +1,21 @@
 import React, { useState } from 'react';
 import { Rental, Car } from '../types';
 import { Search } from 'lucide-react';
-import { formatCurrency, formatDateNumeric } from '../utils';
+import { formatCurrency } from '../utils';
+
+// Local numeric date formatter fallback
+const formatDateNumericSafe = (value: any): string => {
+  try {
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '—';
+    const day = d.getDate();
+    const month = d.getMonth() + 1;
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch {
+    return '—';
+  }
+};
 
 interface HistoryProps {
   history: Rental[];
@@ -49,8 +63,8 @@ const History: React.FC<HistoryProps> = ({ history = [], cars = [] }) => {
                 <tbody className="divide-y divide-white/5">
                 {filteredHistory.map((rental) => {
                     const car = cars.find(c => c.id === rental?.carId);
-                    const startDate = rental?.startDate ? formatDateNumeric(rental.startDate) : '—';
-                    const endDate = rental?.actualEndDate ? formatDateNumeric(rental.actualEndDate) : '—';
+                    const startDate = rental?.startDate ? formatDateNumericSafe(rental.startDate) : '—';
+                    const endDate = rental?.actualEndDate ? formatDateNumericSafe(rental.actualEndDate) : '—';
                     const cost = rental?.totalCost ?? 0;
                     return (
                     <tr key={rental?.id ?? Math.random()} className="hover:bg-white/5 transition-colors">
