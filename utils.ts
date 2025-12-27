@@ -1,8 +1,6 @@
 import { Car, Rental, CarStatus } from './types';
 import jsPDF from 'jspdf';
-import arabicFontUrl from './fonts/NotoSansArabic-Regular.ttf?url';
-import reshape from 'arabic-reshaper';
-import { reorderVisually } from 'bidi-js';
+import html2canvas from 'html2canvas';
 
 export const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('ar-JO', {
@@ -22,107 +20,57 @@ export const calculateDays = (start: string, end: string) => {
   return days > 0 ? days : 1;
 };
 
-let cachedArabicFontBase64: string | null = null;
-
-const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-  }
-  return btoa(binary);
-};
-
-const ensureArabicFont = async (doc: jsPDF) => {
-  if (!cachedArabicFontBase64) {
-    const res = await fetch(arabicFontUrl);
-    const buffer = await res.arrayBuffer();
-    cachedArabicFontBase64 = arrayBufferToBase64(buffer);
-  }
-  doc.addFileToVFS('NotoSansArabic-Regular.ttf', cachedArabicFontBase64 as string);
-  doc.addFont('NotoSansArabic-Regular.ttf', 'NotoSansArabic', 'normal');
-  doc.setFont('NotoSansArabic', 'normal');
-};
-
-const isArabicText = (value: string) => /[\u0600-\u06FF]/.test(value);
-const shapeAndBidi = (text: string) => {
-  if (!isArabicText(text)) return text;
-  // reshape joins glyphs then reorder for RTL display
-  return reorderVisually(reshape(text), 'RTL');
-};
-
-// PDF Generator with Arabic-capable font (labels بالإنجليزي، القيم تُعرض حسب اللغة المُدخلة)
+// PDF generator via DOM render (html2canvas) to preserve Arabic shaping
 export const generateInvoicePDF = async (rental: Rental, car: Car) => {
-  const doc = new jsPDF({
-    orientation: 'p',
-    unit: 'mm',
-    format: 'a4',
-  });
-
-  await ensureArabicFont(doc);
-  // نبقي الاتجاه العام من اليسار لليمين؛ القيم التي تحتوي عربية تُكتب مع isInputRtl
-  doc.setR2L(false);
-  doc.setLanguage('en');
-
-  const writeText = (text: string, x: number, y: number, align: 'left' | 'center' | 'right' = 'left') => {
-    const rtl = isArabicText(text);
-    const shaped = shapeAndBidi(text);
-    doc.text(shaped, x, y, { align, isInputRtl: rtl });
-  };
-  
-  // Header
-  doc.setFillColor(17, 17, 17); // #111111
-  doc.rect(0, 0, 210, 40, 'F');
-  
-  doc.setTextColor(212, 175, 55); // #d4af37
-  doc.setFontSize(22);
-  writeText('Vehicle Rental Invoice', 105, 20, 'center');
-  
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(12);
-  doc.text('PRESTIGE CAR RENTAL - JORDAN', 105, 30, { align: 'center' });
-
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(12);
-  
-  let y = 60;
-  const addLine = (label: string, value: string) => {
-    doc.setFont('NotoSansArabic', 'normal');
-    // label يسار، القيمة يمين لدعم العربية
-    writeText(label, 20, y, 'left');
-    writeText(value, 190, y, 'right');
-    y += 10;
-  };
-
-  addLine('Invoice No.', rental.id.toUpperCase());
-  addLine('Date', new Date().toLocaleDateString());
-  y += 5;
-  addLine('Customer', rental.customer.name);
-  addLine('Phone', rental.customer.phone);
-  y += 5;
-  addLine('Car', `${car.make} ${car.model} (${car.year})`);
-  addLine('Plate', car.plate);
-  y += 5;
-  addLine('Start Date', new Date(rental.startDate).toLocaleDateString());
-  addLine('Return Date', rental.actualEndDate ? new Date(rental.actualEndDate).toLocaleDateString() : '-');
-  
   const days = calculateDays(rental.startDate, rental.actualEndDate || new Date().toISOString());
-  addLine('Duration (days)', `${days}`);
-  addLine('Base Cost', formatCurrency(rental.baseCost));
-  addLine('Fines', formatCurrency(rental.fineAmount || 0));
-  
-  y += 10;
-  doc.setLineWidth(0.5);
-  doc.line(20, y, 190, y);
-  y += 12;
-  
-  doc.setFont('NotoSansArabic', 'normal');
-  doc.setFontSize(16);
-  doc.setTextColor(212, 175, 55);
-  writeText(`Total Due: ${formatCurrency(rental.totalCost)}`, 190, y, 'right');
 
-  doc.save(`Invoice_${rental.id}.pdf`);
+  const container = document.createElement('div');
+  container.id = 'invoice-print';
+  container.style.position = 'fixed';
+  container.style.left = '-9999px';
+  container.style.top = '0';
+  container.style.width = '794px'; // ~A4 width in px at 96dpi
+  container.style.background = '#fff';
+  container.style.fontFamily = 'Noto Sans Arabic, Arial, sans-serif';
+  container.innerHTML = `
+    <style>
+      #invoice-print * { box-sizing: border-box; }
+      #invoice-print .header { background:#111; color:#d4af37; padding:24px; text-align:center; font-size:24px; font-weight:700; }
+      #invoice-print .body { padding:32px 40px 48px; color:#111; }
+      #invoice-print .row { display:flex; justify-content:space-between; margin-bottom:10px; font-size:14px; }
+      #invoice-print .label { color:#555; font-weight:600; }
+      #invoice-print .value { color:#000; text-align:right; direction:rtl; }
+      #invoice-print .section { margin-top:18px; }
+      #invoice-print .total { margin-top:28px; padding-top:12px; border-top:1px solid #444; text-align:right; color:#d4af37; font-size:18px; font-weight:700; }
+    </style>
+    <div class="header">Vehicle Rental Invoice</div>
+    <div class="body">
+      <div class="row"><span class="label">Invoice No.</span><span class="value">${rental.id.toUpperCase()}</span></div>
+      <div class="row"><span class="label">Date</span><span class="value">${new Date().toLocaleDateString()}</span></div>
+      <div class="row"><span class="label">Customer</span><span class="value">${rental.customer.name}</span></div>
+      <div class="row"><span class="label">Phone</span><span class="value">${rental.customer.phone}</span></div>
+      <div class="row"><span class="label">Car</span><span class="value">${car.make} ${car.model} (${car.year})</span></div>
+      <div class="row"><span class="label">Plate</span><span class="value">${car.plate}</span></div>
+      <div class="row"><span class="label">Start Date</span><span class="value">${new Date(rental.startDate).toLocaleDateString()}</span></div>
+      <div class="row"><span class="label">Return Date</span><span class="value">${rental.actualEndDate ? new Date(rental.actualEndDate).toLocaleDateString() : '-'}</span></div>
+      <div class="row"><span class="label">Duration (days)</span><span class="value">${days}</span></div>
+      <div class="row"><span class="label">Base Cost</span><span class="value">${formatCurrency(rental.baseCost)}</span></div>
+      <div class="row"><span class="label">Fines</span><span class="value">${formatCurrency(rental.fineAmount || 0)}</span></div>
+      <div class="total">Total Due: ${formatCurrency(rental.totalCost)}</div>
+    </div>
+  `;
+
+  document.body.appendChild(container);
+  const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+  const imgData = canvas.toDataURL('image/png');
+  const pdf = new jsPDF('p', 'pt', 'a4');
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const imgWidth = pageWidth;
+  const imgHeight = canvas.height * (imgWidth / canvas.width);
+  pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
+  pdf.save(`Invoice_${rental.id}.pdf`);
+  document.body.removeChild(container);
 };
 
 const DEFAULT_CARS: Car[] = [
