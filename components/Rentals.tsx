@@ -25,7 +25,12 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
   
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [days, setDays] = useState(1);
+  const [startDate, setStartDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  });
   const [manualDailyRate, setManualDailyRate] = useState(0);
   const [extensionDays, setExtensionDays] = useState(1);
   const [startMileage, setStartMileage] = useState(0);
@@ -60,9 +65,16 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
     e.preventDefault();
     if (!selectedCar) return;
 
-    const startDate = new Date();
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + Number(days));
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return;
+    if (end < start) {
+      alert('تاريخ التسليم يجب أن يكون بعد تاريخ الاستلام');
+      return;
+    }
+
+    const days = calculateDays(start.toISOString(), end.toISOString());
 
     const rental: Rental = {
       id: generateId(),
@@ -72,8 +84,8 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
         phone: customerPhone,
         nationalId: '000'
       },
-      startDate: startDate.toISOString(),
-      expectedEndDate: endDate.toISOString(),
+      startDate: start.toISOString(),
+      expectedEndDate: end.toISOString(),
       startMileage: Number(startMileage),
       totalCost: manualDailyRate * days,
       status: RentalStatus.ACTIVE
@@ -118,11 +130,17 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
   const resetForm = () => {
     setCustomerName('');
     setCustomerPhone('');
-    setDays(1);
     setSelectedCarId('');
     setStartMileage(0);
     setManualDailyRate(0);
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+    setStartDate(today.toISOString().split('T')[0]);
+    setEndDate(tomorrow.toISOString().split('T')[0]);
   };
+
+  const rentalDays = calculateDays(startDate, endDate);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
@@ -260,11 +278,16 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label className="block text-gray-400 mb-1 text-sm">عدد الأيام</label>
-                    <input required type="number" min="1" className="w-full bg-black-900 border border-white/10 rounded-lg p-3 text-white focus:border-gold-500 outline-none" 
-                        value={days} onChange={e => setDays(Number(e.target.value))} />
-                </div>
+              <div>
+                <label className="block text-gray-400 mb-1 text-sm">تاريخ الاستلام</label>
+                <input required type="date" className="w-full bg-black-900 border border-white/10 rounded-lg p-3 text-white focus:border-gold-500 outline-none" 
+                  value={startDate} onChange={e => setStartDate(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-gray-400 mb-1 text-sm">تاريخ التسليم</label>
+                <input required type="date" className="w-full bg-black-900 border border-white/10 rounded-lg p-3 text-white focus:border-gold-500 outline-none" 
+                  value={endDate} onChange={e => setEndDate(e.target.value)} />
+              </div>
                 <div>
                     <label className="block text-gray-400 mb-1 text-sm">السعر اليومي المتفق</label>
                     <input required type="number" className="w-full bg-black-900 border border-white/10 rounded-lg p-3 text-white focus:border-gold-500 outline-none" 
@@ -283,9 +306,9 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
             <div className="bg-gold-500/5 p-4 rounded-xl border border-gold-500/20 flex justify-between items-center">
                 <div className="flex items-center gap-3 text-gold-500">
                     <Banknote size={24} />
-                    <span className="font-bold">المبلغ الإجمالي المستحق</span>
+                <span className="font-bold">المبلغ الإجمالي المستحق ({rentalDays} يوم)</span>
                 </div>
-                <span className="text-2xl font-bold text-white">{formatCurrency(manualDailyRate * days)}</span>
+              <span className="text-2xl font-bold text-white">{formatCurrency(manualDailyRate * rentalDays)}</span>
             </div>
 
             <button type="submit" className="w-full bg-gold-500 text-black-900 font-bold py-4 rounded-lg hover:bg-gold-600 transition-all mt-4 text-lg">
