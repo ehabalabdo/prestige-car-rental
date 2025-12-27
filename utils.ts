@@ -43,7 +43,9 @@ const ensureArabicFont = async (doc: jsPDF) => {
   doc.setFont('NotoSansArabic', 'normal');
 };
 
-// PDF Generator with Arabic font support
+const isArabicText = (value: string) => /[\u0600-\u06FF]/.test(value);
+
+// PDF Generator with Arabic-capable font (labels بالإنجليزي، القيم تُعرض حسب اللغة المُدخلة)
 export const generateInvoicePDF = async (rental: Rental, car: Car) => {
   const doc = new jsPDF({
     orientation: 'p',
@@ -52,11 +54,13 @@ export const generateInvoicePDF = async (rental: Rental, car: Car) => {
   });
 
   await ensureArabicFont(doc);
-  doc.setR2L(true);
-  doc.setLanguage('ar');
+  // نبقي الاتجاه العام من اليسار لليمين؛ القيم التي تحتوي عربية تُكتب مع isInputRtl
+  doc.setR2L(false);
+  doc.setLanguage('en');
 
-  const writeRtl = (text: string, x: number, y: number, align: 'left' | 'center' | 'right' = 'right') => {
-    doc.text(text, x, y, { align, isInputRtl: true });
+  const writeText = (text: string, x: number, y: number, align: 'left' | 'center' | 'right' = 'left') => {
+    const rtl = isArabicText(text);
+    doc.text(text, x, y, { align, isInputRtl: rtl });
   };
   
   // Header
@@ -65,7 +69,7 @@ export const generateInvoicePDF = async (rental: Rental, car: Car) => {
   
   doc.setTextColor(212, 175, 55); // #d4af37
   doc.setFontSize(22);
-  writeRtl('إيصال / فاتورة تأجير مركبة', 105, 20, 'center');
+  writeText('Vehicle Rental Invoice', 105, 20, 'center');
   
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(12);
@@ -77,26 +81,28 @@ export const generateInvoicePDF = async (rental: Rental, car: Car) => {
   let y = 60;
   const addLine = (label: string, value: string) => {
     doc.setFont('NotoSansArabic', 'normal');
-    writeRtl(`${label}: ${value}`, 190, y, 'right');
+    // label يسار، القيمة يمين لدعم العربية
+    writeText(label, 20, y, 'left');
+    writeText(value, 190, y, 'right');
     y += 10;
   };
 
-  addLine('رقم الفاتورة', rental.id.toUpperCase());
-  addLine('التاريخ', new Date().toLocaleDateString());
+  addLine('Invoice No.', rental.id.toUpperCase());
+  addLine('Date', new Date().toLocaleDateString());
   y += 5;
-  addLine('اسم العميل', rental.customer.name);
-  addLine('الهاتف', rental.customer.phone);
+  addLine('Customer', rental.customer.name);
+  addLine('Phone', rental.customer.phone);
   y += 5;
-  addLine('المركبة', `${car.make} ${car.model} (${car.year})`);
-  addLine('رقم اللوحة', car.plate);
+  addLine('Car', `${car.make} ${car.model} (${car.year})`);
+  addLine('Plate', car.plate);
   y += 5;
-  addLine('تاريخ الاستلام', new Date(rental.startDate).toLocaleDateString());
-  addLine('تاريخ التسليم', rental.actualEndDate ? new Date(rental.actualEndDate).toLocaleDateString() : '-');
+  addLine('Start Date', new Date(rental.startDate).toLocaleDateString());
+  addLine('Return Date', rental.actualEndDate ? new Date(rental.actualEndDate).toLocaleDateString() : '-');
   
   const days = calculateDays(rental.startDate, rental.actualEndDate || new Date().toISOString());
-  addLine('المدة بالأيام', `${days}`);
-  addLine('التكلفة قبل المخالفات', formatCurrency(rental.baseCost));
-  addLine('قيمة المخالفات', formatCurrency(rental.fineAmount || 0));
+  addLine('Duration (days)', `${days}`);
+  addLine('Base Cost', formatCurrency(rental.baseCost));
+  addLine('Fines', formatCurrency(rental.fineAmount || 0));
   
   y += 10;
   doc.setLineWidth(0.5);
@@ -106,7 +112,7 @@ export const generateInvoicePDF = async (rental: Rental, car: Car) => {
   doc.setFont('NotoSansArabic', 'normal');
   doc.setFontSize(16);
   doc.setTextColor(212, 175, 55);
-  writeRtl(`الإجمالي المستحق: ${formatCurrency(rental.totalCost)}`, 190, y, 'right');
+  writeText(`Total Due: ${formatCurrency(rental.totalCost)}`, 190, y, 'right');
 
   doc.save(`Invoice_${rental.id}.pdf`);
 };
