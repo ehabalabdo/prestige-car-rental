@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Car, Key, History, Wrench, LogOut, X, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Car, Key, History, Wrench, LogOut, X, ShieldCheck, Calendar } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -15,6 +15,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onLogout, on
     { id: 'dashboard', label: 'الرئيسية', icon: <LayoutDashboard size={20} /> },
     { id: 'fleet', label: 'الأسطول', icon: <Car size={20} /> },
     { id: 'rentals', label: 'العقود والتاجير', icon: <Key size={20} /> },
+    { id: 'availability', label: 'جدول التوافر', icon: <Calendar size={20} /> },
     { id: 'maintenance', label: 'الصيانة', icon: <Wrench size={20} /> },
     { id: 'history', label: 'السجل', icon: <History size={20} /> },
   ];

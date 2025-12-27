@@ -54,6 +54,27 @@
       ::-webkit-scrollbar-thumb:hover {
         background: #d4af37;
       }
+      
+      /* Print Styles */
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        .print-area, .print-area * {
+          visibility: visible;
+        }
+        .print-area {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          background: white;
+          color: black;
+        }
+        .no-print {
+          display: none !important;
+        }
+      }
     </style>
   <script type="importmap">
 {

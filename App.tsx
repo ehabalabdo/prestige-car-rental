@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { pdf } from '@react-pdf/renderer';
-import { InvoicePDF } from './components/InvoicePDF';
-import { PaymentReceiptPDF } from './components/PaymentReceiptPDF';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import Cars from './components/Cars';
 import Rentals from './components/Rentals';
 import History from './components/History';
 import Maintenance from './components/Maintenance';
+import Availability from './components/Availability';
+import InvoicePrint from './components/InvoicePrint';
 import { Menu } from 'lucide-react';
 import { Car, Rental, CarStatus, RentalStatus } from './types';
 import { getInitialData, formatCurrency, calculateDays } from './utils';
@@ -99,6 +98,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [preSelectedCarId, setPreSelectedCarId] = useState<string | null>(null);
+  const [invoiceToPrint, setInvoiceToPrint] = useState<{ rental: Rental; car: Car } | null>(null);
   
   const [cars, setCars] = useState<Car[]>([]);
   const [rentals, setRentals] = useState<Rental[]>([]);
@@ -215,6 +215,26 @@ const App: React.FC = () => {
   };
 
   const createRental = (rental: Rental) => {
+    // CRITICAL: Check for date overlap with existing rentals
+    const newStart = new Date(rental.startDate);
+    const newEnd = new Date(rental.endDate);
+    
+    const hasOverlap = rentals.some(existingRental => {
+      // Only check rentals for the same car
+      if (existingRental.carId !== rental.carId) return false;
+      
+      const existingStart = new Date(existingRental.startDate);
+      const existingEnd = new Date(existingRental.endDate || existingRental.actualEndDate || existingRental.startDate);
+      
+      // Check if dates overlap
+      return newStart <= existingEnd && newEnd >= existingStart;
+    });
+    
+    if (hasOverlap) {
+      alert('السيارة محجوزة خلال هذه الفترة - يرجى اختيار تواريخ أخرى');
+      return;
+    }
+    
     setRentals([...rentals, rental]);
     const updatedCars = cars.map(c => c.id === rental.carId ? { ...c, status: CarStatus.RENTED } : c);
     setCars(updatedCars);
@@ -253,46 +273,19 @@ const App: React.FC = () => {
        } : c);
        setCars(updatedCars);
        
-       // CRITICAL: Validate invoice data before PDF generation (prevents crashes)
+       // CRITICAL: Validate invoice data before generation
        const isValidInvoiceData = 
          completedRental?.startDate && 
          completedRental?.totalCost !== undefined &&
          !isNaN(Number(completedRental.totalCost));
        
-       if (!isValidInvoiceData) {
+       if (isValidInvoiceData) {
+         // Open print invoice modal
+         setInvoiceToPrint({ rental: completedRental, car });
+       } else {
          console.error('Invalid invoice data:', completedRental);
-         alert('بيانات الفاتورة غير مكتملة - لا يمكن إنشاء الفاتورة');
-         return;
+         alert('بيانات الفاتورة غير مكتملة');
        }
-       
-       // Generate invoice and receipts PDFs using @react-pdf/renderer
-       (async () => {
-         try {
-           // Generate invoice
-           const invoiceBlob = await pdf(<InvoicePDF rental={completedRental} car={car} />).toBlob();
-           const invoiceUrl = URL.createObjectURL(invoiceBlob);
-           const invoiceLink = document.createElement('a');
-           invoiceLink.href = invoiceUrl;
-           invoiceLink.download = `فاتورة_${completedRental.id}.pdf`;
-           invoiceLink.click();
-           URL.revokeObjectURL(invoiceUrl);
-           
-           // Generate payment receipts
-           for (const payment of completedRental.payments || []) {
-             const receiptBlob = await pdf(
-               <PaymentReceiptPDF rental={completedRental} car={car} payment={payment} />
-             ).toBlob();
-             const receiptUrl = URL.createObjectURL(receiptBlob);
-             const receiptLink = document.createElement('a');
-             receiptLink.href = receiptUrl;
-             receiptLink.download = `إيصال_${completedRental.id}_${payment.id}.pdf`;
-             receiptLink.click();
-             URL.revokeObjectURL(receiptUrl);
-           }
-         } catch (error) {
-           console.error('PDF generation failed:', error);
-         }
-       })();
        
        if (exceededMaintenance) {
          alert('تنبيه: المركبة تجاوزت عداد الصيانة وتحتاج إلى صيانة');
@@ -415,10 +408,20 @@ const App: React.FC = () => {
               initialSelectedCarId={preSelectedCarId || undefined}
             />
           )}
+          {activeTab === 'availability' && <Availability cars={cars} rentals={rentals} />}
           {activeTab === 'history' && <History history={history} cars={cars} />}
           {activeTab === 'maintenance' && <Maintenance cars={cars} />}
         </div>
       </main>
+      
+      {/* Invoice Print Modal */}
+      {invoiceToPrint && (
+        <InvoicePrint 
+          rental={invoiceToPrint.rental} 
+          car={invoiceToPrint.car}
+          onClose={() => setInvoiceToPrint(null)}
+        />
+      )}
     </div>
   );
 };

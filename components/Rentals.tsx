@@ -1,10 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { pdf } from '@react-pdf/renderer';
-import { PaymentReceiptPDF } from './PaymentReceiptPDF';
 import { Car, Rental, CarStatus, RentalStatus } from '../types';
 import { generateId, formatCurrency, calculateDays } from '../utils';
-import { User, Phone, Clock, ArrowRightLeft, AlertCircle, Gauge, PlusCircle, Banknote, Printer } from 'lucide-react';
+import { User, Phone, Clock, ArrowRightLeft, AlertCircle, Gauge, PlusCircle, Banknote } from 'lucide-react';
 import Modal from './Modal';
 
 interface RentalsProps {
@@ -327,44 +325,13 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
                     <p className="text-[9px] text-gray-500 uppercase font-bold mb-2">الدفعات المسجلة</p>
                     <div className="space-y-2">
                       {(rental.payments || []).map((pmt) => (
-                        <div key={pmt.id} className="flex justify-between items-center text-xs bg-black-900/40 p-2 rounded-lg">
-                          <div className="text-white">
-                            <span className="text-gray-400">{new Date(pmt.date).toLocaleDateString()}</span>
-                            <span className="mx-2">•</span>
-                            <span className="font-bold text-green-400">{formatCurrency(pmt.amount)}</span>
-                            {pmt.note && <span className="text-gray-400 ml-2">— {pmt.note}</span>}
-                          </div>
-                          {car && (
-                            <button
-                              title="طباعة سند قبض"
-                              onClick={async () => {
-                                try {
-                                  // CRITICAL: Validate payment data before PDF generation
-                                  if (!pmt?.amount || !pmt?.date) {
-                                    alert('بيانات الدفعة غير مكتملة - لا يمكن إنشاء الإيصال');
-                                    return;
-                                  }
-                                  
-                                  const receiptBlob = await pdf(
-                                    <PaymentReceiptPDF rental={rental} car={car} payment={pmt} />
-                                  ).toBlob();
-                                  const receiptUrl = URL.createObjectURL(receiptBlob);
-                                  const receiptLink = document.createElement('a');
-                                  receiptLink.href = receiptUrl;
-                                  receiptLink.download = `إيصال_${rental.id}_${pmt.id}.pdf`;
-                                  receiptLink.click();
-                                  URL.revokeObjectURL(receiptUrl);
-                                } catch (error) {
-                                  console.error('Receipt generation failed:', error);
-                                  alert('فشل إنشاء السند - يرجى التحقق من البيانات');
-                                }
-                              }}
-                              className="p-2 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 rounded-xl transition-all"
-                            >
-                              <Printer size={16} />
-                            </button>
-                          )}
+                        <div key={pmt.id} className="text-xs bg-black-900/40 p-2 rounded-lg text-white">
+                          <span className="text-gray-400">{new Date(pmt.date).toLocaleDateString()}</span>
+                          <span className="mx-2">•</span>
+                          <span className="font-bold text-green-400">{formatCurrency(pmt.amount)}</span>
+                          {pmt.note && <span className="text-gray-400 ml-2">— {pmt.note}</span>}
                         </div>
+                      ))}
                       ))}
                     </div>
                   </div>
