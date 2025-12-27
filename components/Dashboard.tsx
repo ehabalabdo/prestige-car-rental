@@ -1,7 +1,8 @@
 import React from 'react';
 import { Car, Rental, CarStatus } from '../types';
 import { CarFront, Banknote, CalendarCheck, Activity, CheckCircle2, Clock, AlertTriangle, ChevronLeft, ShieldCheck } from 'lucide-react';
-import { formatCurrency, formatDateNumeric } from '../utils';
+import { formatCurrency } from '../utils';
+import { formatDateNumeric } from '@/utils/date';
 
 
 interface DashboardProps {
