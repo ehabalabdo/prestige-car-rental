@@ -9,10 +9,36 @@ interface InvoicePrintProps {
 }
 
 const InvoicePrint: React.FC<InvoicePrintProps> = ({ rental, car, onClose }) => {
+  // CRITICAL: Validate invoice data before rendering anything
+  if (!rental || !car) {
+    return (
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+        <div className="bg-red-900/80 text-white p-6 rounded-xl max-w-sm">
+          <p className="text-lg font-bold">خطأ: بيانات الفاتورة غير متوفرة</p>
+          <button onClick={onClose} className="mt-4 px-6 py-2 bg-white/20 rounded-lg">إغلاق</button>
+        </div>
+      </div>
+    );
+  }
+
+  // Validate required fields
+  const hasStartDate = rental?.startDate && !isNaN(new Date(rental.startDate).getTime());
+  const hasTotalCost = rental?.totalCost !== undefined && !isNaN(Number(rental.totalCost));
+  if (!hasStartDate || !hasTotalCost) {
+    return (
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+        <div className="bg-red-900/80 text-white p-6 rounded-xl max-w-sm">
+          <p className="text-lg font-bold">خطأ: بيانات ناقصة في الفاتورة</p>
+          <button onClick={onClose} className="mt-4 px-6 py-2 bg-white/20 rounded-lg">إغلاق</button>
+        </div>
+      </div>
+    );
+  }
+
   // Sanitize data - read from rental.customer object
   const customerName = safeString(rental?.customer?.name || 'غير محدد');
   const customerPhone = safeString(rental?.customer?.phone || 'غير محدد');
-  const carBrand = safeString(car?.brand || 'غير محدد');
+  const carBrand = safeString(car?.brand || car?.make || 'غير محدد');
   const carModel = safeString(car?.model || 'غير محدد');
   const carYear = safeNumber(car?.year);
   const carPlate = safeString(car?.plate || 'غير محدد');

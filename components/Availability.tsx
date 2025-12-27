@@ -39,17 +39,23 @@ const Availability: React.FC<AvailabilityProps> = ({ cars, rentals }) => {
       if (rental.carId !== carId) return false;
       if (rental.status !== RentalStatus.ACTIVE) return false; // Only active rentals
       
-      // Create new date objects to avoid mutation
-      const check = new Date(checkDate);
-      const startDate = new Date(rental.startDate);
-      const endDate = new Date(rental.expectedEndDate || rental.startDate);
-      
-      // Set time to midnight for accurate day comparison
-      check.setHours(0, 0, 0, 0);
-      startDate.setHours(0, 0, 0, 0);
-      endDate.setHours(23, 59, 59, 999);
-      
-      return check >= startDate && check <= endDate;
+      // CRITICAL: Safe date range checking without mutations
+      try {
+        const checkDate_norm = new Date(checkDate.toISOString().split('T')[0]); // Normalize to midnight UTC
+        const startDate_norm = new Date(rental.startDate);
+        const endDate_norm = new Date(rental.expectedEndDate || rental.startDate);
+        
+        // Normalize all to midnight UTC for date-only comparison
+        checkDate_norm.setUTCHours(0, 0, 0, 0);
+        startDate_norm.setUTCHours(0, 0, 0, 0);
+        endDate_norm.setUTCHours(23, 59, 59, 999);
+        
+        // Range check: day is booked if checkDate >= startDate AND checkDate <= endDate
+        return checkDate_norm >= startDate_norm && checkDate_norm <= endDate_norm;
+      } catch (error) {
+        console.error('Date parsing error in availability check:', error);
+        return false; // If date parsing fails, treat as not booked
+      }
     });
 
     return activeRental ? 'reserved' : 'available';

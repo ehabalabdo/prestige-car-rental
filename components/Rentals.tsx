@@ -77,12 +77,24 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
 
   const handleRentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCar) return;
+    if (!selectedCar) {
+      alert('يرجى اختيار سيارة');
+      return;
+    }
+
+    // CRITICAL: Validate date strings before conversion
+    if (!startDate || !endDate || startDate.trim() === '' || endDate.trim() === '') {
+      alert('يرجى تحديد تاريخ البداية والنهاية');
+      return;
+    }
 
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return;
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      alert('تاريخ غير صالح - تأكد من صيغة التاريخ');
+      return;
+    }
     if (end < start) {
       alert('تاريخ التسليم يجب أن يكون بعد تاريخ الاستلام');
       return;
