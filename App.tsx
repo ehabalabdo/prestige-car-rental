@@ -377,6 +377,7 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           {activeTab === 'dashboard' && (
             <Dashboard 
+              key={`dashboard-${rentals.length}`}
               cars={cars} 
               rentals={rentals} 
               history={history} 
