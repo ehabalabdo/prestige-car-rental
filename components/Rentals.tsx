@@ -129,6 +129,25 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
       return;
     }
 
+    // Check for date conflicts with existing rentals
+    const startStr = start.toISOString().split('T')[0];
+    const endStr = end.toISOString().split('T')[0];
+    
+    const hasConflict = rentals.some(rental => {
+      if (rental.carId !== selectedCar.id) return false;
+      
+      const rentalStart = rental.startDate.split('T')[0];
+      const rentalEnd = rental.expectedEndDate.split('T')[0];
+      
+      // Check if new rental overlaps with existing rental
+      return (startStr <= rentalEnd && endStr >= rentalStart);
+    });
+
+    if (hasConflict) {
+      alert('السيارة محجوزة في هذه الفترة. يرجى اختيار تواريخ مختلفة أو سيارة أخرى.');
+      return;
+    }
+
     const days = calculateDays(start.toISOString(), end.toISOString());
     const baseCost = manualDailyRate * days;
 
