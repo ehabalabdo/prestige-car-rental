@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Car, Rental, CarStatus, RentalStatus } from '../types';
-import { generateId, formatCurrency, calculateDays } from '../utils';
+import { generateId, formatCurrency, calculateDays, formatDateNumeric } from '../utils';
 import { User, Phone, Clock, ArrowRightLeft, AlertCircle, Gauge, PlusCircle, Banknote } from 'lucide-react';
 import Modal from './Modal';
 
