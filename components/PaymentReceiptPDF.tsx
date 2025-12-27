@@ -3,17 +3,9 @@ import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/rendere
 import { Rental, Car } from '../types';
 import { formatCurrency } from '../utils';
 
-// Register Arabic font
-Font.register({
-  family: 'Cairo',
-  src: 'https://fonts.gstatic.com/s/cairo/v28/SLXgc1nY6HkvangtZmpQdkhzfH5lkSs2SgRjCAGMQ1z0hGA-W1ToLQ-HmkA.ttf',
-});
-
 const styles = StyleSheet.create({
   page: {
     padding: 30,
-    fontFamily: 'Cairo',
-    direction: 'rtl',
   },
   header: {
     backgroundColor: '#111111',

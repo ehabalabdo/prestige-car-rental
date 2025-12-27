@@ -3,17 +3,11 @@ import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/rendere
 import { Rental, Car } from '../types';
 import { formatCurrency, calculateDays } from '../utils';
 
-// Register Arabic font
-Font.register({
-  family: 'Cairo',
-  src: 'https://fonts.gstatic.com/s/cairo/v28/SLXgc1nY6HkvangtZmpQdkhzfH5lkSs2SgRjCAGMQ1z0hGA-W1ToLQ-HmkA.ttf',
-});
-
+// Register fallback font - using Helvetica for now as it's built-in
+// Arabic will be rendered as best as possible
 const styles = StyleSheet.create({
   page: {
     padding: 40,
-    fontFamily: 'Cairo',
-    direction: 'rtl',
   },
   header: {
     backgroundColor: '#111111',
