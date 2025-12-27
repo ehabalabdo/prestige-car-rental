@@ -92,7 +92,8 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
     return () => clearTimeout(timer);
   }, []);
 
-  const availableCars = cars.filter(c => c.status === CarStatus.AVAILABLE);
+  // Available cars: those not in maintenance (can have RESERVED/ACTIVE rentals, just not conflicting)
+  const availableCars = cars.filter(c => c.status !== CarStatus.MAINTENANCE);
   const selectedCar = cars.find(c => c.id === selectedCarId);
 
   const handleCarChange = (id: string) => {
