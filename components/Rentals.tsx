@@ -364,8 +364,11 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
                           header.style.gap = '8px';
                           header.style.marginBottom = '12px';
                           header.innerHTML = `
-                            <div style="padding:6px;border-radius:10px;background:#d4af37;color:#000;font-weight:700">PRESTIGE</div>
-                            <div style="font-size:12px;color:#9ca3af;font-weight:700;letter-spacing:1px">JORDAN ELITE</div>
+                            <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;background:#0f0f14;border:1px solid rgba(255,255,255,0.08)">
+                              <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#d4af37;color:#000;font-weight:800">🛡️</span>
+                              <span style="color:#fff;font-weight:800;letter-spacing:0.5px">PRESTIGE</span>
+                              <span style="font-size:11px;color:#9ca3af;font-weight:700;letter-spacing:1px">JORDAN ELITE</span>
+                            </div>
                           `;
                           const cloned = node.cloneNode(true) as HTMLElement;
                           cloned.style.marginTop = '8px';
