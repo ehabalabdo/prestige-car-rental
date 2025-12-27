@@ -2,6 +2,7 @@ import { Car, Rental, CarStatus } from './types';
 import jsPDF from 'jspdf';
 import arabicFontUrl from './fonts/NotoSansArabic-Regular.ttf?url';
 import reshape from 'arabic-reshaper';
+import { reorderVisually } from 'bidi-js';
 
 export const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('ar-JO', {
@@ -45,6 +46,11 @@ const ensureArabicFont = async (doc: jsPDF) => {
 };
 
 const isArabicText = (value: string) => /[\u0600-\u06FF]/.test(value);
+const shapeAndBidi = (text: string) => {
+  if (!isArabicText(text)) return text;
+  // reshape joins glyphs then reorder for RTL display
+  return reorderVisually(reshape(text), 'RTL');
+};
 
 // PDF Generator with Arabic-capable font (labels بالإنجليزي، القيم تُعرض حسب اللغة المُدخلة)
 export const generateInvoicePDF = async (rental: Rental, car: Car) => {
@@ -61,7 +67,7 @@ export const generateInvoicePDF = async (rental: Rental, car: Car) => {
 
   const writeText = (text: string, x: number, y: number, align: 'left' | 'center' | 'right' = 'left') => {
     const rtl = isArabicText(text);
-    const shaped = rtl ? reshape(text) : text;
+    const shaped = shapeAndBidi(text);
     doc.text(shaped, x, y, { align, isInputRtl: rtl });
   };
   
