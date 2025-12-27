@@ -54,80 +54,19 @@ const Dashboard: React.FC<DashboardProps> = ({ cars = [], rentals = [], history 
         </div>
       </header>
 
-      {/* Active Rentals Section */}
+      {/* Fleet Overview Section */}
       <div className="space-y-6">
         <div className="flex justify-between items-center px-2">
             <h2 className="text-2xl font-bold text-white flex items-center gap-3">
                 <div className="w-1.5 h-8 bg-gold-500 rounded-full"></div>
-                العقود النشطة
+                إدارة الأسطول السريعة
             </h2>
             <div className="hidden sm:flex gap-5 text-[9px] uppercase font-bold tracking-[0.2em] bg-black-800/80 px-4 py-2 rounded-full border border-white/10">
-                <span className="flex items-center gap-2 text-blue-500"><span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)]"></span> محجوز</span>
-                <span className="flex items-center gap-2 text-green-500"><span className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]"></span> مؤجّر</span>
-                <span className="flex items-center gap-2 text-gray-500"><span className="w-2.5 h-2.5 rounded-full bg-gray-500 shadow-[0_0_10px_rgba(107,114,128,0.6)]"></span> منتهي</span>
+                <span className="flex items-center gap-2 text-green-500"><span className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]"></span> متاح</span>
+                <span className="flex items-center gap-2 text-blue-500"><span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)]"></span> مؤجر</span>
+                <span className="flex items-center gap-2 text-red-500"><span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)]"></span> صيانة</span>
             </div>
         </div>
-
-        {rentals && rentals.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {rentals.map((rental) => {
-              const car = cars.find(c => c.id === rental.carId);
-              const displayStatus = getRentalDisplayStatus(rental);
-              const statusColor = displayStatus === 'active' ? 'bg-green-500/90 text-white' :
-                                displayStatus === 'reserved' ? 'bg-blue-500/90 text-white' :
-                                'bg-gray-500/90 text-white';
-              
-              return (
-                <div
-                  key={rental.id}
-                  className="bg-black-800 rounded-3xl border border-white/5 overflow-hidden group hover:border-gold-500/50 transition-all cursor-pointer relative shadow-2xl transform hover:-translate-y-2 duration-500"
-                >
-                  <div className="h-40 relative overflow-hidden">
-                    <img 
-                      src={car?.image} 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 opacity-60 group-hover:opacity-100" 
-                      alt="" 
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black-800 via-transparent to-transparent opacity-90" />
-                    <div className={`absolute top-4 left-4 px-3 py-1.5 rounded-xl text-[9px] font-bold shadow-2xl backdrop-blur-md flex items-center gap-2 border border-white/20 ${statusColor}`}>
-                      {displayStatus === 'active' ? <Clock size={12}/> : 
-                       displayStatus === 'reserved' ? <CalendarCheck size={12}/> : <CheckCircle2 size={12}/>}
-                      {getStatusLabel(displayStatus)}
-                    </div>
-                  </div>
-                  <div className="p-5">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-base font-bold text-white group-hover:text-gold-500 transition-colors truncate">{car?.make} {car?.model}</h3>
-                      <span className="text-[10px] font-mono text-gray-500 bg-black-900 px-2 py-0.5 rounded border border-white/5">{car?.plate}</span>
-                    </div>
-                    <div className="mt-3 space-y-2">
-                      <p className="text-[9px] text-gray-500 uppercase font-bold tracking-widest">العميل</p>
-                      <p className="text-sm font-semibold text-white">{rental.customer.name}</p>
-                      <p className="text-[9px] text-gray-400">{rental.customer.phone}</p>
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-white/5 grid grid-cols-2 gap-3 text-[9px]">
-                      <div>
-                        <p className="text-gray-500 uppercase font-bold mb-1">البدء</p>
-                        <p className="text-white font-mono">{formatDateNumeric(rental.startDate)}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500 uppercase font-bold mb-1">الانتهاء</p>
-                        <p className="text-white font-mono">{formatDateNumeric(rental.expectedEndDate)}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-base">لا توجد عقود نشطة حالياً</p>
-          </div>
-        )}
-      </div>
-
-      {/* Fleet Overview Section */}
       <div className="space-y-6">
         <div className="flex justify-between items-center px-2">
             <h2 className="text-2xl font-bold text-white flex items-center gap-3">
