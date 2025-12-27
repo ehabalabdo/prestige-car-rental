@@ -339,6 +339,12 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
                               title="طباعة سند قبض"
                               onClick={async () => {
                                 try {
+                                  // CRITICAL: Validate payment data before PDF generation
+                                  if (!pmt?.amount || !pmt?.date) {
+                                    alert('بيانات الدفعة غير مكتملة - لا يمكن إنشاء الإيصال');
+                                    return;
+                                  }
+                                  
                                   const receiptBlob = await pdf(
                                     <PaymentReceiptPDF rental={rental} car={car} payment={pmt} />
                                   ).toBlob();
@@ -350,7 +356,7 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
                                   URL.revokeObjectURL(receiptUrl);
                                 } catch (error) {
                                   console.error('Receipt generation failed:', error);
-                                  alert('فشل إنشاء السند');
+                                  alert('فشل إنشاء السند - يرجى التحقق من البيانات');
                                 }
                               }}
                               className="p-2 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 rounded-xl transition-all"

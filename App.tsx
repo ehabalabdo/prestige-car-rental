@@ -253,6 +253,18 @@ const App: React.FC = () => {
        } : c);
        setCars(updatedCars);
        
+       // CRITICAL: Validate invoice data before PDF generation (prevents crashes)
+       const isValidInvoiceData = 
+         completedRental?.startDate && 
+         completedRental?.totalCost !== undefined &&
+         !isNaN(Number(completedRental.totalCost));
+       
+       if (!isValidInvoiceData) {
+         console.error('Invalid invoice data:', completedRental);
+         alert('بيانات الفاتورة غير مكتملة - لا يمكن إنشاء الفاتورة');
+         return;
+       }
+       
        // Generate invoice and receipts PDFs using @react-pdf/renderer
        (async () => {
          try {

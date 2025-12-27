@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Car, Rental } from './types';
+import { sanitizeForFirestore } from './utils';
 
 // Collection names
 const COLLECTIONS = {
@@ -23,8 +24,9 @@ const COLLECTIONS = {
 // ============ CARS ============
 export const saveCarsToFirestore = async (cars: Car[]): Promise<boolean> => {
   try {
+    // CRITICAL: Sanitize data before Firestore write to prevent undefined errors
     const promises = cars.map(car => 
-      setDoc(doc(db, COLLECTIONS.CARS, car.id), car)
+      setDoc(doc(db, COLLECTIONS.CARS, car.id), sanitizeForFirestore(car))
     );
     await Promise.all(promises);
     console.log('[firestore] cars saved');
@@ -49,7 +51,8 @@ export const loadCarsFromFirestore = async (): Promise<Car[]> => {
 
 export const addCarToFirestore = async (car: Car): Promise<boolean> => {
   try {
-    await setDoc(doc(db, COLLECTIONS.CARS, car.id), car);
+    // CRITICAL: Sanitize to prevent undefined values
+    await setDoc(doc(db, COLLECTIONS.CARS, car.id), sanitizeForFirestore(car));
     return true;
   } catch (error) {
     console.error('Error adding car to Firestore:', error);
@@ -69,7 +72,8 @@ export const deleteCarFromFirestore = async (carId: string): Promise<boolean> =>
 
 export const updateCarInFirestore = async (car: Car): Promise<boolean> => {
   try {
-    await setDoc(doc(db, COLLECTIONS.CARS, car.id), car);
+    // CRITICAL: Sanitize to prevent undefined values
+    await setDoc(doc(db, COLLECTIONS.CARS, car.id), sanitizeForFirestore(car));
     return true;
   } catch (error) {
     console.error('Error updating car in Firestore:', error);
@@ -80,8 +84,9 @@ export const updateCarInFirestore = async (car: Car): Promise<boolean> => {
 // ============ RENTALS ============
 export const saveRentalsToFirestore = async (rentals: Rental[]): Promise<boolean> => {
   try {
+    // CRITICAL: Sanitize each rental to prevent undefined values
     const promises = rentals.map(rental => 
-      setDoc(doc(db, COLLECTIONS.RENTALS, rental.id), rental)
+      setDoc(doc(db, COLLECTIONS.RENTALS, rental.id), sanitizeForFirestore(rental))
     );
     await Promise.all(promises);
     console.log('[firestore] rentals saved');
@@ -106,7 +111,8 @@ export const loadRentalsFromFirestore = async (): Promise<Rental[]> => {
 
 export const addRentalToFirestore = async (rental: Rental): Promise<boolean> => {
   try {
-    await setDoc(doc(db, COLLECTIONS.RENTALS, rental.id), rental);
+    // CRITICAL: Sanitize to prevent undefined values
+    await setDoc(doc(db, COLLECTIONS.RENTALS, rental.id), sanitizeForFirestore(rental));
     return true;
   } catch (error) {
     console.error('Error adding rental to Firestore:', error);
@@ -127,8 +133,9 @@ export const deleteRentalFromFirestore = async (rentalId: string): Promise<boole
 // ============ HISTORY ============
 export const saveHistoryToFirestore = async (history: Rental[]): Promise<boolean> => {
   try {
+    // CRITICAL: Sanitize each history item to prevent undefined values
     const promises = history.map(rental => 
-      setDoc(doc(db, COLLECTIONS.HISTORY, rental.id), rental)
+      setDoc(doc(db, COLLECTIONS.HISTORY, rental.id), sanitizeForFirestore(rental))
     );
     await Promise.all(promises);
     console.log('[firestore] history saved');
@@ -153,7 +160,8 @@ export const loadHistoryFromFirestore = async (): Promise<Rental[]> => {
 
 export const addHistoryToFirestore = async (rental: Rental): Promise<boolean> => {
   try {
-    await setDoc(doc(db, COLLECTIONS.HISTORY, rental.id), rental);
+    // CRITICAL: Sanitize to prevent undefined values
+    await setDoc(doc(db, COLLECTIONS.HISTORY, rental.id), sanitizeForFirestore(rental));
     return true;
   } catch (error) {
     console.error('Error adding history to Firestore:', error);

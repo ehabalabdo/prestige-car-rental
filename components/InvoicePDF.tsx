@@ -1,5 +1,6 @@
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
 import cairoFont from '../assets/fonts/Cairo-Regular.woff';
+import { safeString, safeNumber, formatDateSafe, formatCurrency } from '../utils';
 
 // تسجيل الخط العربي
 Font.register({
@@ -94,27 +95,33 @@ interface InvoicePDFProps {
   car: any;
 }
 
+/**
+ * BULLETPROOF Invoice PDF Component
+ * NEVER crashes even with missing or invalid data
+ * All values sanitized before rendering
+ */
 export const InvoicePDF = ({ rental, car }: InvoicePDFProps) => {
-  const formatDate = (date: any) => {
-    if (!date) return '';
-    const d = date instanceof Date ? date : new Date(date.seconds * 1000);
-    return new Intl.DateTimeFormat('ar-JO', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    }).format(d);
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-JO', {
-      style: 'currency',
-      currency: 'JOD',
-    }).format(amount);
-  };
-
-  const totalFines = rental.fines?.reduce((sum: number, fine: any) => sum + fine.amount, 0) || 0;
-  const totalPayments = rental.payments?.reduce((sum: number, payment: any) => sum + payment.amount, 0) || 0;
-  const outstanding = rental.totalCost + totalFines - totalPayments;
+  // CRITICAL: Sanitize all data to prevent crashes
+  const rentalId = safeString(rental?.id || 'N/A');
+  const customerName = safeString(rental?.customer?.name || rental?.customerName || 'غير محدد');
+  const customerPhone = safeString(rental?.customer?.phone || rental?.customerPhone || 'غير محدد');
+  
+  const carBrand = safeString(car?.brand || car?.make || 'غير محدد');
+  const carModel = safeString(car?.model || 'غير محدد');
+  const carYear = safeNumber(car?.year);
+  const carPlate = safeString(car?.plate || 'غير محدد');
+  
+  const startDate = rental?.startDate;
+  const endDate = rental?.endDate || rental?.actualEndDate;
+  const totalCost = safeNumber(rental?.totalCost || rental?.baseCost);
+  
+  // Calculate totals safely
+  const fines = Array.isArray(rental?.fines) ? rental.fines : [];
+  const payments = Array.isArray(rental?.payments) ? rental.payments : [];
+  
+  const totalFines = fines.reduce((sum: number, fine: any) => sum + safeNumber(fine?.amount), 0);
+  const totalPayments = payments.reduce((sum: number, payment: any) => sum + safeNumber(payment?.amount), 0);
+  const outstanding = totalCost + totalFines - totalPayments;
 
   return (
     <Document>
@@ -129,11 +136,11 @@ export const InvoicePDF = ({ rental, car }: InvoicePDFProps) => {
         <View style={styles.section}>
           <View style={styles.row}>
             <Text style={styles.label}>رقم الفاتورة:</Text>
-            <Text style={styles.value}>{rental.id}</Text>
+            <Text style={styles.value}>{rentalId}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>تاريخ الفاتورة:</Text>
-            <Text style={styles.value}>{formatDate(new Date())}</Text>
+            <Text style={styles.value}>{formatDateSafe(new Date())}</Text>
           </View>
         </View>
 
@@ -142,11 +149,11 @@ export const InvoicePDF = ({ rental, car }: InvoicePDFProps) => {
           <Text style={styles.label}>معلومات العميل</Text>
           <View style={styles.row}>
             <Text style={styles.label}>الاسم:</Text>
-            <Text style={styles.value}>{rental.customerName}</Text>
+            <Text style={styles.value}>{customerName}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>الهاتف:</Text>
-            <Text style={styles.value}>{rental.customerPhone}</Text>
+            <Text style={styles.value}>{customerPhone}</Text>
           </View>
         </View>
 
@@ -155,11 +162,13 @@ export const InvoicePDF = ({ rental, car }: InvoicePDFProps) => {
           <Text style={styles.label}>معلومات السيارة</Text>
           <View style={styles.row}>
             <Text style={styles.label}>السيارة:</Text>
-            <Text style={styles.value}>{car?.brand} {car?.model} ({car?.year})</Text>
+            <Text style={styles.value}>
+              {carBrand} {carModel} {carYear > 0 ? `(${carYear})` : ''}
+            </Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>رقم اللوحة:</Text>
-            <Text style={styles.value}>{car?.plate}</Text>
+            <Text style={styles.value}>{carPlate}</Text>
           </View>
         </View>
 
@@ -168,20 +177,20 @@ export const InvoicePDF = ({ rental, car }: InvoicePDFProps) => {
           <Text style={styles.label}>تفاصيل الإيجار</Text>
           <View style={styles.row}>
             <Text style={styles.label}>تاريخ البداية:</Text>
-            <Text style={styles.value}>{formatDate(rental.startDate)}</Text>
+            <Text style={styles.value}>{formatDateSafe(startDate) || 'غير محدد'}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>تاريخ النهاية:</Text>
-            <Text style={styles.value}>{formatDate(rental.endDate)}</Text>
+            <Text style={styles.value}>{formatDateSafe(endDate) || 'غير محدد'}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>التكلفة الأساسية:</Text>
-            <Text style={styles.value}>{formatCurrency(rental.totalCost)}</Text>
+            <Text style={styles.value}>{formatCurrency(totalCost)}</Text>
           </View>
         </View>
 
         {/* جدول المخالفات */}
-        {rental.fines && rental.fines.length > 0 && (
+        {fines.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.label}>المخالفات</Text>
             <View style={styles.table}>
@@ -190,11 +199,11 @@ export const InvoicePDF = ({ rental, car }: InvoicePDFProps) => {
                 <Text style={styles.tableCell}>المبلغ</Text>
                 <Text style={[styles.tableCell, { flex: 2 }]}>الملاحظات</Text>
               </View>
-              {rental.fines.map((fine: any, index: number) => (
+              {fines.map((fine: any, index: number) => (
                 <View key={index} style={styles.tableRow}>
-                  <Text style={styles.tableCell}>{formatDate(fine.date)}</Text>
-                  <Text style={styles.tableCell}>{formatCurrency(fine.amount)}</Text>
-                  <Text style={[styles.tableCell, { flex: 2 }]}>{fine.note || '-'}</Text>
+                  <Text style={styles.tableCell}>{formatDateSafe(fine?.date) || '-'}</Text>
+                  <Text style={styles.tableCell}>{formatCurrency(safeNumber(fine?.amount))}</Text>
+                  <Text style={[styles.tableCell, { flex: 2 }]}>{safeString(fine?.note) || '-'}</Text>
                 </View>
               ))}
             </View>
@@ -206,7 +215,7 @@ export const InvoicePDF = ({ rental, car }: InvoicePDFProps) => {
         )}
 
         {/* جدول الدفعات */}
-        {rental.payments && rental.payments.length > 0 && (
+        {payments.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.label}>الدفعات</Text>
             <View style={styles.table}>
@@ -215,11 +224,11 @@ export const InvoicePDF = ({ rental, car }: InvoicePDFProps) => {
                 <Text style={styles.tableCell}>المبلغ</Text>
                 <Text style={[styles.tableCell, { flex: 2 }]}>الملاحظات</Text>
               </View>
-              {rental.payments.map((payment: any, index: number) => (
+              {payments.map((payment: any, index: number) => (
                 <View key={index} style={styles.tableRow}>
-                  <Text style={styles.tableCell}>{formatDate(payment.date)}</Text>
-                  <Text style={styles.tableCell}>{formatCurrency(payment.amount)}</Text>
-                  <Text style={[styles.tableCell, { flex: 2 }]}>{payment.note || '-'}</Text>
+                  <Text style={styles.tableCell}>{formatDateSafe(payment?.date) || '-'}</Text>
+                  <Text style={styles.tableCell}>{formatCurrency(safeNumber(payment?.amount))}</Text>
+                  <Text style={[styles.tableCell, { flex: 2 }]}>{safeString(payment?.note) || '-'}</Text>
                 </View>
               ))}
             </View>
@@ -234,7 +243,7 @@ export const InvoicePDF = ({ rental, car }: InvoicePDFProps) => {
         <View style={styles.totalSection}>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>التكلفة الأساسية:</Text>
-            <Text style={styles.totalValue}>{formatCurrency(rental.totalCost)}</Text>
+            <Text style={styles.totalValue}>{formatCurrency(totalCost)}</Text>
           </View>
           {totalFines > 0 && (
             <View style={styles.totalRow}>
@@ -244,7 +253,7 @@ export const InvoicePDF = ({ rental, car }: InvoicePDFProps) => {
           )}
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>المجموع الكلي:</Text>
-            <Text style={styles.totalValue}>{formatCurrency(rental.totalCost + totalFines)}</Text>
+            <Text style={styles.totalValue}>{formatCurrency(totalCost + totalFines)}</Text>
           </View>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>المدفوع:</Text>

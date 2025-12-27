@@ -1,5 +1,6 @@
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
 import cairoFont from '../assets/fonts/Cairo-Regular.woff';
+import { safeString, safeNumber, formatDateSafe, formatCurrency } from '../utils';
 
 // تسجيل الخط العربي
 Font.register({
@@ -75,23 +76,24 @@ interface PaymentReceiptPDFProps {
   payment: any;
 }
 
+/**
+ * BULLETPROOF Payment Receipt PDF Component
+ * NEVER crashes even with missing or invalid data
+ */
 export const PaymentReceiptPDF = ({ rental, car, payment }: PaymentReceiptPDFProps) => {
-  const formatDate = (date: any) => {
-    if (!date) return '';
-    const d = date instanceof Date ? date : new Date(date.seconds * 1000);
-    return new Intl.DateTimeFormat('ar-JO', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    }).format(d);
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-JO', {
-      style: 'currency',
-      currency: 'JOD',
-    }).format(amount);
-  };
+  // CRITICAL: Sanitize all data to prevent crashes
+  const rentalId = safeString(rental?.id || 'N/A');
+  const customerName = safeString(rental?.customer?.name || rental?.customerName || 'غير محدد');
+  const customerPhone = safeString(rental?.customer?.phone || rental?.customerPhone || 'غير محدد');
+  
+  const carBrand = safeString(car?.brand || car?.make || 'غير محدد');
+  const carModel = safeString(car?.model || 'غير محدد');
+  const carYear = safeNumber(car?.year);
+  const carPlate = safeString(car?.plate || 'غير محدد');
+  
+  const paymentDate = payment?.date;
+  const paymentAmount = safeNumber(payment?.amount);
+  const paymentNote = safeString(payment?.note);
 
   return (
     <Document>
@@ -106,11 +108,11 @@ export const PaymentReceiptPDF = ({ rental, car, payment }: PaymentReceiptPDFPro
         <View style={styles.section}>
           <View style={styles.row}>
             <Text style={styles.label}>رقم العقد:</Text>
-            <Text style={styles.value}>{rental.id}</Text>
+            <Text style={styles.value}>{rentalId}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>تاريخ الدفع:</Text>
-            <Text style={styles.value}>{formatDate(payment.date)}</Text>
+            <Text style={styles.value}>{formatDateSafe(paymentDate) || 'غير محدد'}</Text>
           </View>
         </View>
 
@@ -119,11 +121,11 @@ export const PaymentReceiptPDF = ({ rental, car, payment }: PaymentReceiptPDFPro
           <Text style={styles.label}>معلومات العميل</Text>
           <View style={styles.row}>
             <Text style={styles.label}>الاسم:</Text>
-            <Text style={styles.value}>{rental.customerName}</Text>
+            <Text style={styles.value}>{customerName}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>الهاتف:</Text>
-            <Text style={styles.value}>{rental.customerPhone}</Text>
+            <Text style={styles.value}>{customerPhone}</Text>
           </View>
         </View>
 
@@ -132,20 +134,22 @@ export const PaymentReceiptPDF = ({ rental, car, payment }: PaymentReceiptPDFPro
           <Text style={styles.label}>معلومات السيارة</Text>
           <View style={styles.row}>
             <Text style={styles.label}>السيارة:</Text>
-            <Text style={styles.value}>{car?.brand} {car?.model} ({car?.year})</Text>
+            <Text style={styles.value}>
+              {carBrand} {carModel} {carYear > 0 ? `(${carYear})` : ''}
+            </Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>رقم اللوحة:</Text>
-            <Text style={styles.value}>{car?.plate}</Text>
+            <Text style={styles.value}>{carPlate}</Text>
           </View>
         </View>
 
         {/* تفاصيل الدفع */}
-        {payment.note && (
+        {paymentNote && (
           <View style={styles.section}>
             <View style={styles.row}>
               <Text style={styles.label}>ملاحظات:</Text>
-              <Text style={styles.value}>{payment.note}</Text>
+              <Text style={styles.value}>{paymentNote}</Text>
             </View>
           </View>
         )}
@@ -154,7 +158,7 @@ export const PaymentReceiptPDF = ({ rental, car, payment }: PaymentReceiptPDFPro
         <View style={styles.amountSection}>
           <View style={styles.amountRow}>
             <Text style={styles.amountLabel}>المبلغ المدفوع:</Text>
-            <Text style={styles.amountValue}>{formatCurrency(payment.amount)}</Text>
+            <Text style={styles.amountValue}>{formatCurrency(paymentAmount)}</Text>
           </View>
         </View>
 
