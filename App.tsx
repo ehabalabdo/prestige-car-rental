@@ -112,8 +112,18 @@ const App: React.FC = () => {
             const firestoreData = await loadAllDataFromFirestore();
             console.log('[firestore] load success');
             setCars(firestoreData.cars || []);
-            setRentals(firestoreData.rentals || []);
-            setHistory(firestoreData.history || []);
+            setRentals((firestoreData.rentals || []).map(r => ({
+              ...r,
+              baseCost: r.baseCost ?? r.totalCost ?? 0,
+              fineAmount: r.fineAmount ?? 0,
+              totalCost: r.totalCost ?? (r.baseCost ?? 0)
+            })));
+            setHistory((firestoreData.history || []).map(r => ({
+              ...r,
+              baseCost: r.baseCost ?? r.totalCost ?? 0,
+              fineAmount: r.fineAmount ?? 0,
+              totalCost: r.totalCost ?? (r.baseCost ?? 0)
+            })));
           } catch (error) {
             console.warn('[firestore] load failed', error);
             setCars([]);
@@ -224,9 +234,17 @@ const App: React.FC = () => {
     setRentals(rentals.filter(r => r.id !== rentalId));
     const car = cars.find(c => c.id === rental.carId);
     if (car) {
-       const updatedCars = cars.map(c => c.id === rental.carId ? { ...c, status: CarStatus.AVAILABLE, currentMileage: endMileage } : c);
+       const exceededMaintenance = car.nextMaintenanceMileage !== undefined && endMileage >= car.nextMaintenanceMileage;
+       const updatedCars = cars.map(c => c.id === rental.carId ? { 
+         ...c, 
+         status: exceededMaintenance ? CarStatus.MAINTENANCE : CarStatus.AVAILABLE, 
+         currentMileage: endMileage 
+       } : c);
        setCars(updatedCars);
-       generateInvoicePDF(completedRental, car);
+       void generateInvoicePDF(completedRental, car);
+       if (exceededMaintenance) {
+         alert('تنبيه: المركبة تجاوزت عداد الصيانة وتحتاج إلى صيانة');
+       }
        
        if (isAuthenticated) {
          addHistoryToFirestore(completedRental).catch(err => console.warn('Failed to sync history:', err));
@@ -246,10 +264,13 @@ const App: React.FC = () => {
         const dailyRate = car?.dailyRate || 0;
         const currentEndDate = new Date(r.expectedEndDate);
         currentEndDate.setDate(currentEndDate.getDate() + additionalDays);
+        const newBaseCost = (r.baseCost || r.totalCost) + (dailyRate * additionalDays);
+        const fineAmount = r.fineAmount || 0;
         const updatedRental = {
           ...r,
           expectedEndDate: currentEndDate.toISOString(),
-          totalCost: r.totalCost + (dailyRate * additionalDays)
+          baseCost: newBaseCost,
+          totalCost: newBaseCost + fineAmount
         };
         if (isAuthenticated) addRentalToFirestore(updatedRental).catch(err => console.warn('Failed to sync rental:', err));
         return updatedRental;
@@ -333,6 +354,12 @@ const App: React.FC = () => {
               onRentCar={createRental} 
               onReturnCar={returnRental}
               onExtendRental={extendRental}
+              onUpdateRental={(updatedRental) => {
+                setRentals(prev => prev.map(r => r.id === updatedRental.id ? updatedRental : r));
+                if (isAuthenticated) {
+                  addRentalToFirestore(updatedRental).catch(err => console.warn('Failed to sync rental update:', err));
+                }
+              }}
               initialSelectedCarId={preSelectedCarId || undefined}
             />
           )}

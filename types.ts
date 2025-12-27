@@ -39,6 +39,8 @@ export interface Rental {
   actualEndDate?: string; // ISO String
   startMileage: number;
   endMileage?: number;
+  baseCost: number;
+  fineAmount?: number;
   totalCost: number;
   status: RentalStatus;
 }

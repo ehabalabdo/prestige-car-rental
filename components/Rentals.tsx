@@ -11,17 +11,20 @@ interface RentalsProps {
   onRentCar: (rental: Rental) => void;
   onReturnCar: (rentalId: string, endMileage: number) => void;
   onExtendRental: (rentalId: string, additionalDays: number) => void;
+  onUpdateRental: (rental: Rental) => void;
   initialSelectedCarId?: string;
 }
 
-const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar, onExtendRental, initialSelectedCarId }) => {
+const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar, onExtendRental, onUpdateRental, initialSelectedCarId }) => {
   const [isRentModalOpen, setIsRentModalOpen] = useState(false);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
   const [isExtendModalOpen, setIsExtendModalOpen] = useState(false);
+  const [isFineModalOpen, setIsFineModalOpen] = useState(false);
   
   const [selectedCarId, setSelectedCarId] = useState('');
   const [selectedRentalForReturn, setSelectedRentalForReturn] = useState<Rental | null>(null);
   const [selectedRentalForExtend, setSelectedRentalForExtend] = useState<Rental | null>(null);
+  const [selectedRentalForFine, setSelectedRentalForFine] = useState<Rental | null>(null);
   
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -35,6 +38,7 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
   const [extensionDays, setExtensionDays] = useState(1);
   const [startMileage, setStartMileage] = useState(0);
   const [returnMileage, setReturnMileage] = useState(0);
+  const [fineAmount, setFineAmount] = useState(0);
 
   // Sync initialSelectedCarId if provided
   useEffect(() => {
@@ -75,6 +79,7 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
     }
 
     const days = calculateDays(start.toISOString(), end.toISOString());
+    const baseCost = manualDailyRate * days;
 
     const rental: Rental = {
       id: generateId(),
@@ -87,7 +92,9 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
       startDate: start.toISOString(),
       expectedEndDate: end.toISOString(),
       startMileage: Number(startMileage),
-      totalCost: manualDailyRate * days,
+      baseCost,
+      fineAmount: 0,
+      totalCost: baseCost,
       status: RentalStatus.ACTIVE
     };
 
@@ -127,12 +134,19 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
     setIsExtendModalOpen(true);
   };
 
+  const openFineModal = (rental: Rental) => {
+    setSelectedRentalForFine(rental);
+    setFineAmount(rental.fineAmount ?? 0);
+    setIsFineModalOpen(true);
+  };
+
   const resetForm = () => {
     setCustomerName('');
     setCustomerPhone('');
     setSelectedCarId('');
     setStartMileage(0);
     setManualDailyRate(0);
+    setFineAmount(0);
     const today = new Date();
     const tomorrow = new Date();
     tomorrow.setDate(today.getDate() + 1);
@@ -140,7 +154,22 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
     setEndDate(tomorrow.toISOString().split('T')[0]);
   };
 
-  const rentalDays = calculateDays(startDate, endDate);
+  const rentalDays = calculateDays(new Date(startDate).toISOString(), new Date(endDate).toISOString());
+
+  const handleFineSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRentalForFine) return;
+    const baseCost = selectedRentalForFine.baseCost ?? selectedRentalForFine.totalCost;
+    const fineValue = Number(fineAmount) || 0;
+    const updatedRental: Rental = {
+      ...selectedRentalForFine,
+      fineAmount: fineValue,
+      totalCost: baseCost + fineValue
+    };
+    onUpdateRental(updatedRental);
+    setIsFineModalOpen(false);
+    setSelectedRentalForFine(null);
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
@@ -204,7 +233,10 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
                 <div className="flex justify-between items-center pt-4 border-t border-white/5">
                     <div>
                         <p className="text-[9px] text-gray-500 uppercase font-bold">إجمالي التكلفة</p>
-                        <p className="text-xl font-bold text-gold-500">{formatCurrency(rental.totalCost)}</p>
+                    <p className="text-lg font-bold text-gold-500">{formatCurrency(rental.totalCost)}</p>
+                    {rental.fineAmount && rental.fineAmount > 0 && (
+                      <p className="text-[11px] text-red-400">يتضمن مخالفات بقيمة {formatCurrency(rental.fineAmount)}</p>
+                    )}
                     </div>
                     <div className="flex gap-2">
                          <button 
@@ -214,6 +246,13 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
                          >
                              <ArrowRightLeft size={18} />
                          </button>
+                     <button 
+                      onClick={() => openFineModal(rental)}
+                      className="p-2.5 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+                      title="إضافة/تعديل مخالفة"
+                     >
+                       <Banknote size={18} />
+                     </button>
                          <button 
                             onClick={() => openReturnModal(rental)}
                             className="bg-gold-500 text-black-900 px-4 py-2 rounded-xl font-bold text-sm hover:bg-gold-600 transition-all"
@@ -365,6 +404,27 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
               )}
               <button type="submit" className="w-full bg-gold-500 text-black-900 font-bold py-4 rounded-lg hover:bg-gold-600 transition-all mt-4">
                   تحديث العقد
+              </button>
+          </form>
+      </Modal>
+
+      {/* Fine Modal */}
+      <Modal isOpen={isFineModalOpen} onClose={() => { setIsFineModalOpen(false); setSelectedRentalForFine(null); }} title="إضافة أو تعديل المخالفات">
+          <form onSubmit={handleFineSubmit} className="space-y-4">
+              <div>
+                  <label className="block text-gray-400 mb-1 text-sm">قيمة المخالفات (د.أ)</label>
+                  <input required type="number" min="0" className="w-full bg-black-900 border border-white/10 rounded-lg p-3 text-white focus:border-gold-500 outline-none" 
+                      value={fineAmount} onChange={e => setFineAmount(Number(e.target.value))} />
+              </div>
+              {selectedRentalForFine && (
+                <div className="bg-black-900 p-4 rounded-xl text-sm space-y-2">
+                   <div className="flex justify-between"><span className="text-gray-400">التكلفة الأساسية:</span><span className="text-white font-bold">{formatCurrency(selectedRentalForFine.baseCost ?? selectedRentalForFine.totalCost)}</span></div>
+                   <div className="flex justify-between"><span className="text-gray-400">المخالفات:</span><span className="text-red-400 font-bold">{formatCurrency(Number(fineAmount) || 0)}</span></div>
+                   <div className="flex justify-between border-t border-white/5 pt-2"><span className="text-gray-300 font-bold">الإجمالي الجديد:</span><span className="text-gold-500 font-bold">{formatCurrency((selectedRentalForFine.baseCost ?? selectedRentalForFine.totalCost) + (Number(fineAmount) || 0))}</span></div>
+                </div>
+              )}
+              <button type="submit" className="w-full bg-gold-500 text-black-900 font-bold py-4 rounded-lg hover:bg-gold-600 transition-all mt-2">
+                  حفظ المبلغ
               </button>
           </form>
       </Modal>

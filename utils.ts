@@ -1,5 +1,6 @@
 import { Car, Rental, CarStatus } from './types';
 import jsPDF from 'jspdf';
+import arabicFontUrl from './fonts/NotoSansArabic-Regular.ttf?url';
 
 export const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('ar-JO', {
@@ -19,13 +20,40 @@ export const calculateDays = (start: string, end: string) => {
   return days > 0 ? days : 1;
 };
 
-// Simple PDF Generator using jsPDF
-export const generateInvoicePDF = (rental: Rental, car: Car) => {
+let cachedArabicFontBase64: string | null = null;
+
+const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+};
+
+const ensureArabicFont = async (doc: jsPDF) => {
+  if (!cachedArabicFontBase64) {
+    const res = await fetch(arabicFontUrl);
+    const buffer = await res.arrayBuffer();
+    cachedArabicFontBase64 = arrayBufferToBase64(buffer);
+  }
+  doc.addFileToVFS('NotoSansArabic-Regular.ttf', cachedArabicFontBase64 as string);
+  doc.addFont('NotoSansArabic-Regular.ttf', 'NotoSansArabic', 'normal');
+  doc.setFont('NotoSansArabic', 'normal');
+};
+
+// PDF Generator with Arabic font support
+export const generateInvoicePDF = async (rental: Rental, car: Car) => {
   const doc = new jsPDF({
     orientation: 'p',
     unit: 'mm',
     format: 'a4',
   });
+
+  await ensureArabicFont(doc);
+  doc.setR2L(true);
+  doc.setLanguage('ar');
   
   // Header
   doc.setFillColor(17, 17, 17); // #111111
@@ -33,48 +61,48 @@ export const generateInvoicePDF = (rental: Rental, car: Car) => {
   
   doc.setTextColor(212, 175, 55); // #d4af37
   doc.setFontSize(22);
-  doc.text("PRESTIGE CAR RENTAL - JORDAN", 105, 20, { align: "center" });
+  doc.text('إيصال / فاتورة تأجير مركبة', 105, 20, { align: 'center' });
   
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(12);
-  doc.text("INVOICE / RECEIPT - FATOORAH", 105, 30, { align: "center" });
+  doc.text('PRESTIGE CAR RENTAL - JORDAN', 105, 30, { align: 'center' });
 
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(12);
   
   let y = 60;
   const addLine = (label: string, value: string) => {
-    doc.setFont("helvetica", "bold");
-    doc.text(`${label}:`, 20, y);
-    doc.setFont("helvetica", "normal");
-    doc.text(value, 80, y);
+    doc.setFont('NotoSansArabic', 'normal');
+    doc.text(`${label}: ${value}`, 190, y, { align: 'right' });
     y += 10;
   };
 
-  addLine("Invoice ID", rental.id.toUpperCase());
-  addLine("Date", new Date().toLocaleDateString());
+  addLine('رقم الفاتورة', rental.id.toUpperCase());
+  addLine('التاريخ', new Date().toLocaleDateString());
   y += 5;
-  addLine("Customer Name", rental.customer.name);
-  addLine("Phone", rental.customer.phone);
+  addLine('اسم العميل', rental.customer.name);
+  addLine('الهاتف', rental.customer.phone);
   y += 5;
-  addLine("Car", `${car.make} ${car.model} (${car.year})`);
-  addLine("Plate Number", car.plate);
+  addLine('المركبة', `${car.make} ${car.model} (${car.year})`);
+  addLine('رقم اللوحة', car.plate);
   y += 5;
-  addLine("Start Date", new Date(rental.startDate).toLocaleDateString());
-  addLine("End Date", rental.actualEndDate ? new Date(rental.actualEndDate).toLocaleDateString() : '-');
+  addLine('تاريخ الاستلام', new Date(rental.startDate).toLocaleDateString());
+  addLine('تاريخ التسليم', rental.actualEndDate ? new Date(rental.actualEndDate).toLocaleDateString() : '-');
   
   const days = calculateDays(rental.startDate, rental.actualEndDate || new Date().toISOString());
-  addLine("Duration", `${days} Days`);
-  addLine("Daily Rate", `${car.dailyRate} JOD`);
+  addLine('المدة بالأيام', `${days}`);
+  addLine('التكلفة قبل المخالفات', formatCurrency(rental.baseCost));
+  addLine('قيمة المخالفات', formatCurrency(rental.fineAmount || 0));
   
   y += 10;
   doc.setLineWidth(0.5);
   doc.line(20, y, 190, y);
-  y += 10;
+  y += 12;
   
-  doc.setFont("helvetica", "bold");
+  doc.setFont('NotoSansArabic', 'normal');
   doc.setFontSize(16);
-  doc.text(`TOTAL AMOUNT: ${rental.totalCost} JOD`, 190, y, { align: "right" });
+  doc.setTextColor(212, 175, 55);
+  doc.text(`الإجمالي المستحق: ${formatCurrency(rental.totalCost)}`, 190, y, { align: 'right' });
 
   doc.save(`Invoice_${rental.id}.pdf`);
 };
