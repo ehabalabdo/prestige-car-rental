@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Car, Rental, CarStatus, RentalStatus } from '../types';
 import { Calendar, AlertCircle } from 'lucide-react';
+import { getRentalDisplayStatus } from '../utils';
 
 interface AvailabilityProps {
   cars: Car[];
@@ -34,16 +35,18 @@ const Availability: React.FC<AvailabilityProps> = ({ cars, rentals }) => {
       return 'maintenance';
     }
 
-    // Check rentals - only show ACTIVE rentals
-    const activeRental = rentals.find(rental => {
+    // Check rentals - show both ACTIVE and RESERVED rentals (based on display status)
+    const rentalOnDate = rentals.find(rental => {
       if (rental.carId !== carId) return false;
-      if (rental.status !== RentalStatus.ACTIVE) return false; // Only active rentals
+      
+      // Use display status to determine if car is booked
+      const displayStatus = getRentalDisplayStatus(rental);
       
       // CRITICAL: Safe date range checking without mutations
       try {
         const checkDate_norm = new Date(checkDate.toISOString().split('T')[0]); // Normalize to midnight UTC
         const startDate_norm = new Date(rental.startDate);
-        const endDate_norm = new Date(rental.expectedEndDate || rental.startDate);
+        const endDate_norm = new Date(rental.expectedEndDate || rental.endDate || rental.startDate);
         
         // Normalize all to midnight UTC for date-only comparison
         checkDate_norm.setUTCHours(0, 0, 0, 0);
@@ -51,20 +54,27 @@ const Availability: React.FC<AvailabilityProps> = ({ cars, rentals }) => {
         endDate_norm.setUTCHours(23, 59, 59, 999);
         
         // Range check: day is booked if checkDate >= startDate AND checkDate <= endDate
-        return checkDate_norm >= startDate_norm && checkDate_norm <= endDate_norm;
+        const isInRange = checkDate_norm >= startDate_norm && checkDate_norm <= endDate_norm;
+        
+        // Return status only if in date range
+        if (isInRange) {
+          return displayStatus === 'active' ? 'active' : 'reserved';
+        }
+        return false;
       } catch (error) {
         console.error('Date parsing error in availability check:', error);
         return false; // If date parsing fails, treat as not booked
       }
     });
 
-    return activeRental ? 'reserved' : 'available';
+    return rentalOnDate ? rentalOnDate : 'available';
   };
 
   // Get status for entire month
   const getMonthStatus = (carId: string, year: number, month: number) => {
     const statuses = {
       available: 0,
+      active: 0,
       reserved: 0,
       maintenance: 0
     };
@@ -77,9 +87,10 @@ const Availability: React.FC<AvailabilityProps> = ({ cars, rentals }) => {
       statuses[status as keyof typeof statuses]++;
     }
 
-    // Return dominant status
+    // Return dominant status: Maintenance > Active > Reserved > Available
     if (statuses.maintenance > 0) return 'maintenance';
-    if (statuses.reserved > daysInMonth * 0.3) return 'reserved'; // More than 30% reserved
+    if (statuses.active > 0) return 'active'; // Prioritize active rentals (current bookings)
+    if (statuses.reserved > daysInMonth * 0.3) return 'reserved'; // More than 30% reserved (future bookings)
     return 'available';
   };
 
@@ -92,14 +103,18 @@ const Availability: React.FC<AvailabilityProps> = ({ cars, rentals }) => {
         </div>
 
         {/* Legend */}
-        <div className="flex gap-6 mb-8 p-4 bg-black-900/50 rounded-2xl">
+        <div className="flex gap-6 mb-8 p-4 bg-black-900/50 rounded-2xl flex-wrap">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-gray-600 rounded"></div>
             <span className="text-gray-300 text-sm">متاح</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-red-600 rounded"></div>
-            <span className="text-gray-300 text-sm">محجوز</span>
+            <div className="w-6 h-6 bg-green-600 rounded"></div>
+            <span className="text-gray-300 text-sm">مؤجّر حالياً (نشط)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-blue-600 rounded"></div>
+            <span className="text-gray-300 text-sm">محجوز (مستقبلي)</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-orange-600 rounded"></div>
@@ -144,7 +159,8 @@ const Availability: React.FC<AvailabilityProps> = ({ cars, rentals }) => {
                       const status = getMonthStatus(car.id, month.year, month.month);
                       const bgColor = 
                         status === 'maintenance' ? 'bg-orange-600' :
-                        status === 'reserved' ? 'bg-red-600' :
+                        status === 'active' ? 'bg-green-600' :
+                        status === 'reserved' ? 'bg-blue-600' :
                         'bg-gray-600';
                       
                       return (

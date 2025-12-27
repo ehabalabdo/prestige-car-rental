@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Rental, Car } from '../types';
 import { Search } from 'lucide-react';
-import { formatCurrency } from '../utils';
-import { formatDateNumeric } from '@/utils/date';
+import { formatCurrency, getRentalDisplayStatus, getStatusLabel, getStatusColor, formatDateNumeric } from '../utils';
 
 
 interface HistoryProps {
@@ -45,6 +44,7 @@ const History: React.FC<HistoryProps> = ({ history = [], cars = [] }) => {
                     <th className="p-4">السيارة</th>
                     <th className="p-4">تاريخ البدء</th>
                     <th className="p-4">تاريخ الانتهاء</th>
+                    <th className="p-4">الحالة</th>
                     <th className="p-4">التكلفة</th>
                 </tr>
                 </thead>
@@ -54,6 +54,7 @@ const History: React.FC<HistoryProps> = ({ history = [], cars = [] }) => {
                     const startDate = rental?.startDate ? formatDateNumeric(rental.startDate) : '—';
                     const endDate = rental?.actualEndDate ? formatDateNumeric(rental.actualEndDate) : '—';
                     const cost = rental?.totalCost ?? 0;
+                    const displayStatus = getRentalDisplayStatus(rental);
                     return (
                     <tr key={rental?.id ?? Math.random()} className="hover:bg-white/5 transition-colors">
                         <td className="p-4 text-xs font-mono text-gray-500">#{rental?.id ?? '—'}</td>
@@ -61,13 +62,14 @@ const History: React.FC<HistoryProps> = ({ history = [], cars = [] }) => {
                         <td className="p-4 text-gray-300">{car ? `${car.make} ${car.model}` : 'محذوفة'}</td>
                         <td className="p-4 text-gray-400">{startDate}</td>
                         <td className="p-4 text-gray-400">{endDate}</td>
+                        <td className={`p-4 font-bold ${getStatusColor(displayStatus)}`}>{getStatusLabel(displayStatus)}</td>
                         <td className="p-4 text-gold-500 font-bold">{formatCurrency(cost)}</td>
                     </tr>
                     );
                 })}
                 {filteredHistory.length === 0 && (
                     <tr>
-                        <td colSpan={6} className="p-8 text-center text-gray-500">لا توجد سجلات مطابقة</td>
+                        <td colSpan={7} className="p-8 text-center text-gray-500">لا توجد سجلات مطابقة</td>
                     </tr>
                 )}
                 </tbody>

@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Car, Rental, CarStatus, RentalStatus } from '../types';
-import { generateId, formatCurrency, calculateDays } from '../utils';
+import { generateId, formatCurrency, calculateDays, getRentalDisplayStatus, getStatusLabel, getStatusColor } from '../utils';
 import { formatDateNumeric } from '@/utils/date';
 
 import { User, Phone, Clock, ArrowRightLeft, AlertCircle, Gauge, PlusCircle, Banknote } from 'lucide-react';
@@ -252,8 +251,11 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
                     <p className="text-xs text-gray-500 flex items-center gap-1"><Phone size={10}/> {rental.customer.phone}</p>
                   </div>
                 </div>
-                <div className="text-left">
-                    <span className="text-[10px] font-mono text-gray-500 bg-black-900 px-2 py-1 rounded border border-white/5">#{rental.id.toUpperCase()}</span>
+                <div className="text-left space-y-2">
+                    <span className="text-[10px] font-mono text-gray-500 bg-black-900 px-2 py-1 rounded border border-white/5 block">#{rental.id.toUpperCase()}</span>
+                    <span className={`text-[11px] font-bold px-2 py-1 rounded-lg inline-block ${getStatusColor(getRentalDisplayStatus(rental))} bg-black-900/50`}>
+                      {getStatusLabel(getRentalDisplayStatus(rental))}
+                    </span>
                 </div>
               </div>
 

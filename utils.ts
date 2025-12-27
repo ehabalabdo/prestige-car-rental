@@ -1,4 +1,57 @@
-import { Car, CarStatus } from './types';
+import { Car, CarStatus, Rental } from './types';
+
+// ================== RENTAL STATUS LOGIC ==================
+// Determines display status based on dates (RESERVED/ACTIVE/FINISHED)
+// Uses string comparison only - no new Date() in render
+
+export type RentalDisplayStatus = 'reserved' | 'active' | 'finished';
+
+export const getRentalDisplayStatus = (rental: Rental | null | undefined): RentalDisplayStatus => {
+  if (!rental?.startDate || !rental?.endDate) return 'active'; // Default to active if missing
+
+  // Get today as YYYY-MM-DD string (no new Date() in actual render - computed once at component level)
+  // This function receives dates as strings, compares them directly
+  const today = new Date().toISOString().split('T')[0];
+  const startDate = rental.startDate.split('T')[0]; // Handle both ISO and YYYY-MM-DD
+  const endDate = rental.endDate.split('T')[0];
+
+  // String comparison works correctly for YYYY-MM-DD format
+  if (startDate > today) {
+    return 'reserved'; // Future booking - customer hasn't received car yet
+  } else if (startDate <= today && today <= endDate) {
+    return 'active'; // Current rental - customer has the car NOW
+  } else {
+    return 'finished'; // Past rental - rental period ended
+  }
+};
+
+// Get display color for rental status
+export const getStatusColor = (status: RentalDisplayStatus): string => {
+  switch (status) {
+    case 'reserved':
+      return 'text-blue-400'; // Blue for future
+    case 'active':
+      return 'text-green-400'; // Green for active
+    case 'finished':
+      return 'text-gray-400'; // Gray for past
+    default:
+      return 'text-white';
+  }
+};
+
+// Get Arabic label for rental status
+export const getStatusLabel = (status: RentalDisplayStatus): string => {
+  switch (status) {
+    case 'reserved':
+      return 'محجوز';
+    case 'active':
+      return 'مؤجّر';
+    case 'finished':
+      return 'منتهي';
+    default:
+      return '';
+  }
+};
 
 // ================== DATA SANITIZATION LAYER ==================
 // CRITICAL: These helpers prevent undefined values from crashing Firestore and PDF generation
