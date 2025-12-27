@@ -9,22 +9,6 @@ interface AvailabilityProps {
 }
 
 const Availability: React.FC<AvailabilityProps> = ({ cars, rentals }) => {
-  // Generate next 12 months
-  const months = useMemo(() => {
-    const result = [];
-    const now = new Date();
-    for (let i = 0; i < 12; i++) {
-      const date = new Date(now.getFullYear(), now.getMonth() + i, 1);
-      const monthNum = date.getMonth() + 1; // 1-12
-      result.push({
-        year: date.getFullYear(),
-        month: date.getMonth(),
-        name: `${monthNum}/${date.getFullYear()}`,
-        daysInMonth: new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
-      });
-    }
-    return result;
-  }, []);
 
   // Check if a car is reserved or in maintenance on a specific date
   const getCarStatus = (carId: string, checkDate: Date) => {
@@ -70,30 +54,6 @@ const Availability: React.FC<AvailabilityProps> = ({ cars, rentals }) => {
     return 'available';
   };
 
-  // Get status for entire month
-  const getMonthStatus = (carId: string, year: number, month: number) => {
-    const statuses = {
-      available: 0,
-      active: 0,
-      reserved: 0,
-      maintenance: 0
-    };
-
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day);
-      const status = getCarStatus(carId, date);
-      statuses[status as keyof typeof statuses]++;
-    }
-
-    // Return dominant status: Maintenance > Active > Reserved > Available
-    if (statuses.maintenance > 0) return 'maintenance';
-    if (statuses.active > 0) return 'active'; // Prioritize active rentals (current bookings)
-    if (statuses.reserved > daysInMonth * 0.3) return 'reserved'; // More than 30% reserved (future bookings)
-    return 'available';
-  };
-
   return (
     <div className="space-y-6">
       <div className="bg-black-800 rounded-[2.5rem] p-8 border border-white/10">
@@ -122,66 +82,83 @@ const Availability: React.FC<AvailabilityProps> = ({ cars, rentals }) => {
           </div>
         </div>
 
-        {/* Timeline Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-white/10">
-                <th className="text-right p-4 text-white font-bold sticky right-0 bg-black-800 z-10 min-w-[200px]">
-                  السيارة
-                </th>
-                {months.map((month, idx) => (
-                  <th key={idx} className="p-2 text-center text-gray-300 text-sm min-w-[80px]">
-                    {month.name}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {cars.map((car) => {
-                const carName = `${car.brand || car.make} ${car.model}`;
-                return (
-                  <tr key={car.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    <td className="p-4 sticky right-0 bg-black-800 z-10">
-                      <div className="flex items-center gap-3">
-                        <img 
-                          src={car.image} 
-                          alt={carName}
-                          className="w-16 h-10 object-cover rounded-lg"
-                        />
-                        <div>
-                          <p className="text-white font-semibold">{carName}</p>
-                          <p className="text-gray-400 text-xs">{car.plate}</p>
-                        </div>
-                      </div>
-                    </td>
-                    {months.map((month, idx) => {
-                      const status = getMonthStatus(car.id, month.year, month.month);
-                      const bgColor = 
-                        status === 'maintenance' ? 'bg-orange-600' :
-                        status === 'active' ? 'bg-green-600' :
-                        status === 'reserved' ? 'bg-blue-600' :
-                        'bg-gray-600';
-                      
-                      return (
-                        <td key={idx} className="p-2">
-                          <div className={`${bgColor} h-8 rounded transition-all hover:opacity-80`}></div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        {/* Booking Timeline */}
+        <div className="space-y-6">
+          {cars.length === 0 ? (
+            <div className="text-center py-20">
+              <AlertCircle className="mx-auto text-gray-600 mb-4" size={48} />
+              <p className="text-gray-400 text-lg">لا توجد سيارات في النظام</p>
+            </div>
+          ) : (
+            cars.map((car) => {
+              const carName = `${car.brand || car.make} ${car.model}`;
+              const carRentals = rentals.filter(r => r.carId === car.id);
+              
+              // Sort rentals by start date
+              const sortedRentals = [...carRentals].sort((a, b) => 
+                a.startDate.localeCompare(b.startDate)
+              );
 
-        {cars.length === 0 && (
-          <div className="text-center py-20">
-            <AlertCircle className="mx-auto text-gray-600 mb-4" size={48} />
-            <p className="text-gray-400 text-lg">لا توجد سيارات في النظام</p>
-          </div>
-        )}
+              return (
+                <div key={car.id} className="bg-black-900/50 p-6 rounded-2xl border border-white/5">
+                  {/* Car Header */}
+                  <div className="flex items-center gap-4 mb-6">
+                    <img 
+                      src={car.image} 
+                      alt={carName}
+                      className="w-20 h-12 object-cover rounded-lg"
+                    />
+                    <div className="flex-1">
+                      <p className="text-white font-bold text-lg">{carName}</p>
+                      <p className="text-gray-400 text-sm">{car.plate}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-gold-500 font-bold">
+                        {car.status === CarStatus.MAINTENANCE ? '🔧 صيانة' : '✅ متاح'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Bookings List */}
+                  {sortedRentals.length === 0 ? (
+                    <p className="text-gray-500 text-sm text-center py-4">لا توجد حجوزات</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {sortedRentals.map((rental) => {
+                        const displayStatus = getRentalDisplayStatus(rental);
+                        const statusColor = displayStatus === 'active' ? 'bg-green-600/20 border-green-600' : 
+                                          displayStatus === 'reserved' ? 'bg-blue-600/20 border-blue-600' : 
+                                          'bg-gray-600/20 border-gray-600';
+                        const statusDot = displayStatus === 'active' ? '🟢' : 
+                                        displayStatus === 'reserved' ? '🔵' : '⚪';
+                        
+                        return (
+                          <div key={rental.id} className={`${statusColor} border rounded-lg p-4 flex items-center justify-between`}>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-lg">{statusDot}</span>
+                                <p className="text-white font-semibold">{rental.customer.name}</p>
+                              </div>
+                              <div className="flex gap-6 text-sm text-gray-300">
+                                <span>📅 من: <span className="text-white font-mono">{rental.startDate.split('T')[0]}</span></span>
+                                <span>📅 إلى: <span className="text-white font-mono">{rental.expectedEndDate.split('T')[0]}</span></span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className={`font-bold ${displayStatus === 'active' ? 'text-green-400' : displayStatus === 'reserved' ? 'text-blue-400' : 'text-gray-400'}`}>
+                                {displayStatus === 'active' ? 'مؤجّر' : displayStatus === 'reserved' ? 'محجوز' : 'منتهي'}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
     </div>
   );
