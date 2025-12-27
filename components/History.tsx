@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Rental, Car } from '../types';
 import { Search } from 'lucide-react';
-import { formatCurrency } from '../utils';
+import { formatCurrency, formatDateNumeric } from '../utils';
 
 interface HistoryProps {
   history: Rental[];
