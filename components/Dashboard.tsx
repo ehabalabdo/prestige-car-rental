@@ -69,7 +69,33 @@ const Dashboard: React.FC<DashboardProps> = ({ cars = [], rentals = [], history 
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {cars.map(car => (
+            {cars.map(car => {
+              // Check if car has an active rental
+              const carRental = rentals?.find(r => r.carId === car.id);
+              const rentalStatus = carRental ? getRentalDisplayStatus(carRental) : null;
+              
+              // Determine what to display: rental status if exists, otherwise car status
+              const displayLabel = rentalStatus 
+                ? getStatusLabel(rentalStatus)
+                : car.status;
+              
+              const displayColor = rentalStatus
+                ? (rentalStatus === 'reserved' ? 'bg-blue-500/90 text-white' :
+                   rentalStatus === 'active' ? 'bg-green-500/90 text-white' :
+                   'bg-gray-500/90 text-white')
+                : (car.status === CarStatus.AVAILABLE ? 'bg-green-500/90 text-black' :
+                   car.status === CarStatus.RENTED ? 'bg-blue-500/90 text-white' :
+                   'bg-red-500/90 text-white');
+              
+              const displayIcon = rentalStatus
+                ? (rentalStatus === 'reserved' ? <CalendarCheck size={12}/> :
+                   rentalStatus === 'active' ? <Clock size={12}/> :
+                   <CheckCircle2 size={12}/>)
+                : (car.status === CarStatus.AVAILABLE ? <CheckCircle2 size={12}/> :
+                   car.status === CarStatus.RENTED ? <Clock size={12}/> :
+                   <AlertTriangle size={12}/>);
+              
+              return (
                 <div 
                     key={car.id} 
                     onClick={() => onCarClick(car.id)}
@@ -78,14 +104,9 @@ const Dashboard: React.FC<DashboardProps> = ({ cars = [], rentals = [], history 
                     <div className="h-40 relative overflow-hidden">
                         <img src={car.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 opacity-60 group-hover:opacity-100" alt="" />
                         <div className="absolute inset-0 bg-gradient-to-t from-black-800 via-transparent to-transparent opacity-90" />
-                        <div className={`absolute top-4 left-4 px-3 py-1.5 rounded-xl text-[9px] font-bold shadow-2xl backdrop-blur-md flex items-center gap-2 border border-white/20 ${
-                            car.status === CarStatus.AVAILABLE ? 'bg-green-500/90 text-black' :
-                            car.status === CarStatus.RENTED ? 'bg-blue-500/90 text-white' :
-                            'bg-red-500/90 text-white'
-                        }`}>
-                            {car.status === CarStatus.AVAILABLE ? <CheckCircle2 size={12}/> : 
-                             car.status === CarStatus.RENTED ? <Clock size={12}/> : <AlertTriangle size={12}/>}
-                            {car.status}
+                        <div className={`absolute top-4 left-4 px-3 py-1.5 rounded-xl text-[9px] font-bold shadow-2xl backdrop-blur-md flex items-center gap-2 border border-white/20 ${displayColor}`}>
+                            {displayIcon}
+                            {displayLabel}
                         </div>
                     </div>
                     <div className="p-5">
@@ -110,7 +131,8 @@ const Dashboard: React.FC<DashboardProps> = ({ cars = [], rentals = [], history 
                         </div>
                     </div>
                 </div>
-            ))}
+              );
+            })}
         </div>
       </div>
 
