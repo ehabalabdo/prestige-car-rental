@@ -245,7 +245,7 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
 
               <div className="space-y-4">
                 <div className="flex items-center gap-4 bg-black-900/50 p-4 rounded-2xl border border-white/5">
-                   <img src={car?.image} className="w-20 h-12 object-cover rounded-xl" alt="" />
+                   <img src={car?.image} className="w-32 h-20 object-cover rounded-xl" alt="" />
                    <div>
                       <p className="text-sm font-bold text-white">{car?.make} {car?.model}</p>
                       <p className="text-[10px] text-gold-500 font-mono">{car?.plate}</p>
@@ -301,6 +301,24 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
                          </button>
                     </div>
                 </div>
+
+                {(rental.fines || []).length > 0 && (
+                  <div className="mt-4 bg-black-900/30 p-3 rounded-xl border border-white/5">
+                    <p className="text-[9px] text-gray-500 uppercase font-bold mb-2">المخالفات المسجلة</p>
+                    <div className="space-y-2">
+                      {(rental.fines || []).map((fine) => (
+                        <div key={fine.id} className="flex justify-between items-center text-xs bg-black-900/40 p-2 rounded-lg">
+                          <div className="text-white">
+                            <span className="text-gray-400">{new Date(fine.date).toLocaleDateString()}</span>
+                            <span className="mx-2">•</span>
+                            <span className="font-bold text-red-400">{formatCurrency(fine.amount)}</span>
+                            {fine.note && <span className="text-gray-400 ml-2">— {fine.note}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {(rental.payments || []).length > 0 && (
                   <div className="mt-4 bg-black-900/30 p-3 rounded-xl border border-white/5">

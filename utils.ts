@@ -76,16 +76,22 @@ export const generateInvoicePDF = async (rental: Rental, car: Car) => {
 
   document.body.appendChild(container);
 
-  const opts = {
-    margin: 10,
-    filename: `Invoice_${rental.id}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  } as const;
+  try {
+    const opts = {
+      margin: 10,
+      filename: `Invoice_${rental.id}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, logging: false },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
 
-  await html2pdf().set(opts).from(container).save();
-  container.remove();
+    await html2pdf().set(opts).from(container).save();
+  } catch (error) {
+    console.error('Invoice generation failed:', error);
+    alert('فشل إنشاء الفاتورة. يرجى المحاولة مرة أخرى.');
+  } finally {
+    setTimeout(() => container.remove(), 100);
+  }
 };
 
 export const generatePaymentReceiptPDF = async (rental: Rental, car: Car, payment: { id?: string; amount: number; date: string; note?: string }) => {
@@ -127,16 +133,22 @@ export const generatePaymentReceiptPDF = async (rental: Rental, car: Car, paymen
 
   document.body.appendChild(container);
 
-  const opts = {
-    margin: 10,
-    filename: `Receipt_${rental.id}_${payment.id || generateId()}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true },
-    jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' }
-  } as const;
+  try {
+    const opts = {
+      margin: 10,
+      filename: `Receipt_${rental.id}_${payment.id || generateId()}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, logging: false },
+      jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' }
+    };
 
-  await html2pdf().set(opts).from(container).save();
-  container.remove();
+    await html2pdf().set(opts).from(container).save();
+  } catch (error) {
+    console.error('Receipt generation failed:', error);
+    alert('فشل إنشاء السند. يرجى المحاولة مرة أخرى.');
+  } finally {
+    setTimeout(() => container.remove(), 100);
+  }
 };
 
 const DEFAULT_CARS: Car[] = [
