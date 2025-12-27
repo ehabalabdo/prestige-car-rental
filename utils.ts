@@ -7,13 +7,13 @@ import { Car, CarStatus, Rental } from './types';
 export type RentalDisplayStatus = 'reserved' | 'active' | 'finished';
 
 export const getRentalDisplayStatus = (rental: Rental | null | undefined): RentalDisplayStatus => {
-  if (!rental?.startDate || !rental?.endDate) return 'active'; // Default to active if missing
+  if (!rental?.startDate || !rental?.expectedEndDate) return 'active'; // Default to active if missing
 
   // Get today as YYYY-MM-DD string (no new Date() in actual render - computed once at component level)
   // This function receives dates as strings, compares them directly
   const today = new Date().toISOString().split('T')[0];
   const startDate = rental.startDate.split('T')[0]; // Handle both ISO and YYYY-MM-DD
-  const endDate = rental.endDate.split('T')[0];
+  const endDate = rental.expectedEndDate.split('T')[0];
 
   // String comparison works correctly for YYYY-MM-DD format
   if (startDate > today) {
