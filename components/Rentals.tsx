@@ -132,6 +132,11 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
     const days = calculateDays(start.toISOString(), end.toISOString());
     const baseCost = manualDailyRate * days;
 
+    // Determine rental status based on start date
+    const today = new Date().toISOString().split('T')[0];
+    const rentalStartDate = start.toISOString().split('T')[0];
+    const initialStatus = rentalStartDate > today ? RentalStatus.RESERVED : RentalStatus.ACTIVE;
+
     const rental: Rental = {
       id: generateId(),
       carId: selectedCar.id,
@@ -147,7 +152,7 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
       fines: [],
       payments: [],
       totalCost: baseCost,
-      status: RentalStatus.ACTIVE
+      status: initialStatus
     };
 
     onRentCar(rental);
