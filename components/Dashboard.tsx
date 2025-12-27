@@ -36,6 +36,7 @@ const Dashboard: React.FC<DashboardProps> = ({ cars = [], rentals = [], history 
   const activeRentalsCount = rentals?.length ?? 0;
   const availableCarsCount = (cars ?? []).filter(c => c.status === CarStatus.AVAILABLE).length;
   const maintenanceCount = (cars ?? []).filter(c => c.status === CarStatus.MAINTENANCE).length;
+  const today = new Date().toISOString().split('T')[0];
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
@@ -62,39 +63,33 @@ const Dashboard: React.FC<DashboardProps> = ({ cars = [], rentals = [], history 
                 إدارة الأسطول السريعة
             </h2>
             <div className="hidden sm:flex gap-5 text-[9px] uppercase font-bold tracking-[0.2em] bg-black-800/80 px-4 py-2 rounded-full border border-white/10">
-                <span className="flex items-center gap-2 text-green-500"><span className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]"></span> متاح</span>
-                <span className="flex items-center gap-2 text-blue-500"><span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)]"></span> مؤجر</span>
+                <span className="flex items-center gap-2 text-green-500"><span className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]"></span> مؤجر (نشط)</span>
+                <span className="flex items-center gap-2 text-blue-500"><span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)]"></span> محجوز (مستقبلي)</span>
+                <span className="flex items-center gap-2 text-gray-300"><span className="w-2.5 h-2.5 rounded-full bg-gray-500 shadow-[0_0_10px_rgba(107,114,128,0.6)]"></span> متاح</span>
                 <span className="flex items-center gap-2 text-red-500"><span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)]"></span> صيانة</span>
             </div>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {cars.map(car => {
-              // Check if car has an active rental
-              const carRental = rentals?.find(r => r.carId === car.id);
-              const rentalStatus = carRental ? getRentalDisplayStatus(carRental) : null;
-              
-              // Determine what to display: rental status if exists, otherwise car status
-              const displayLabel = rentalStatus 
-                ? getStatusLabel(rentalStatus)
-                : car.status;
-              
-              const displayColor = rentalStatus
-                ? (rentalStatus === 'reserved' ? 'bg-blue-500/90 text-white' :
-                   rentalStatus === 'active' ? 'bg-green-500/90 text-white' :
-                   'bg-gray-500/90 text-white')
-                : (car.status === CarStatus.AVAILABLE ? 'bg-green-500/90 text-black' :
-                   car.status === CarStatus.RENTED ? 'bg-blue-500/90 text-white' :
-                   'bg-red-500/90 text-white');
-              
-              const displayIcon = rentalStatus
-                ? (rentalStatus === 'reserved' ? <CalendarCheck size={12}/> :
-                   rentalStatus === 'active' ? <Clock size={12}/> :
-                   <CheckCircle2 size={12}/>)
-                : (car.status === CarStatus.AVAILABLE ? <CheckCircle2 size={12}/> :
-                   car.status === CarStatus.RENTED ? <Clock size={12}/> :
-                   <AlertTriangle size={12}/>);
-              
+              // Future reservation indicator (does not change main car status)
+              const hasFutureReservation = rentals?.some(r => {
+                if (r.carId !== car.id) return false;
+                const startStr = r.startDate?.split('T')[0] || '';
+                return startStr > today; // future booking
+              });
+
+              // Main status badge color/icon based on car.status
+              const mainStatusColor =
+                car.status === CarStatus.AVAILABLE ? 'bg-gray-700/90 text-white' :
+                car.status === CarStatus.RENTED ? 'bg-green-500/90 text-white' :
+                'bg-red-500/90 text-white';
+
+              const mainStatusIcon =
+                car.status === CarStatus.AVAILABLE ? <CheckCircle2 size={12}/> :
+                car.status === CarStatus.RENTED ? <Clock size={12}/> :
+                <AlertTriangle size={12}/>;
+
               return (
                 <div 
                     key={car.id} 
@@ -104,10 +99,18 @@ const Dashboard: React.FC<DashboardProps> = ({ cars = [], rentals = [], history 
                     <div className="h-40 relative overflow-hidden">
                         <img src={car.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 opacity-60 group-hover:opacity-100" alt="" />
                         <div className="absolute inset-0 bg-gradient-to-t from-black-800 via-transparent to-transparent opacity-90" />
-                        <div className={`absolute top-4 left-4 px-3 py-1.5 rounded-xl text-[9px] font-bold shadow-2xl backdrop-blur-md flex items-center gap-2 border border-white/20 ${displayColor}`}>
-                            {displayIcon}
-                            {displayLabel}
+                        {/* Main status badge (Available/Rented/Maintenance) */}
+                        <div className={`absolute top-4 left-4 px-3 py-1.5 rounded-xl text-[9px] font-bold shadow-2xl backdrop-blur-md flex items-center gap-2 border border-white/20 ${mainStatusColor}`}>
+                            {mainStatusIcon}
+                            {car.status}
                         </div>
+                        {/* Future reserved badge (shown alongside main status) */}
+                        {hasFutureReservation && (
+                          <div className="absolute top-4 right-4 px-3 py-1.5 rounded-xl text-[9px] font-bold shadow-2xl backdrop-blur-md flex items-center gap-2 border border-white/20 bg-blue-500/90 text-white">
+                            <CalendarCheck size={12}/>
+                            محجوز
+                          </div>
+                        )}
                     </div>
                     <div className="p-5">
                         <div className="flex justify-between items-start mb-2">
