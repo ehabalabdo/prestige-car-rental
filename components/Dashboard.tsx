@@ -48,7 +48,7 @@ const Dashboard: React.FC<DashboardProps> = ({ cars = [], rentals = [], history 
             </div>
         </div>
         <div className="bg-black-800 px-5 py-2.5 rounded-2xl border border-white/5 text-[10px] text-gold-500 font-bold shadow-inner">
-          {new Date().toLocaleDateString('ar-JO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          {formatDateNumeric(new Date())}
         </div>
       </header>
 

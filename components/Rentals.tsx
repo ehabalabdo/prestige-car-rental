@@ -255,11 +255,11 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
                 <div className="grid grid-cols-2 gap-4">
                     <div className="bg-black-900/30 p-3 rounded-xl">
                         <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">تاريخ البدء</p>
-                        <p className="text-xs text-white flex items-center gap-2"><Clock size={12} className="text-gold-500"/> {new Date(rental.startDate).toLocaleDateString()}</p>
+                        <p className="text-xs text-white flex items-center gap-2"><Clock size={12} className="text-gold-500"/> {formatDateNumeric(rental.startDate)}</p>
                     </div>
                     <div className="bg-black-900/30 p-3 rounded-xl">
                         <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">تاريخ التسليم المتوقع</p>
-                        <p className="text-xs text-white flex items-center gap-2"><Clock size={12} className="text-red-500"/> {new Date(rental.expectedEndDate).toLocaleDateString()}</p>
+                        <p className="text-xs text-white flex items-center gap-2"><Clock size={12} className="text-red-500"/> {formatDateNumeric(rental.expectedEndDate)}</p>
                     </div>
                 </div>
 
@@ -309,7 +309,7 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
                       {(rental.fines || []).map((fine) => (
                         <div key={fine.id} className="flex justify-between items-center text-xs bg-black-900/40 p-2 rounded-lg">
                           <div className="text-white">
-                            <span className="text-gray-400">{new Date(fine.date).toLocaleDateString()}</span>
+                            <span className="text-gray-400">{formatDateNumeric(fine.date)}</span>
                             <span className="mx-2">•</span>
                             <span className="font-bold text-red-400">{formatCurrency(fine.amount)}</span>
                             {fine.note && <span className="text-gray-400 ml-2">— {fine.note}</span>}
@@ -326,7 +326,7 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
                     <div className="space-y-2">
                       {(rental.payments || []).map((pmt) => (
                         <div key={pmt.id} className="text-xs bg-black-900/40 p-2 rounded-lg text-white">
-                          <span className="text-gray-400">{new Date(pmt.date).toLocaleDateString()}</span>
+                          <span className="text-gray-400">{formatDateNumeric(pmt.date)}</span>
                           <span className="mx-2">•</span>
                           <span className="font-bold text-green-400">{formatCurrency(pmt.amount)}</span>
                           {pmt.note && <span className="text-gray-400 ml-2">— {pmt.note}</span>}
@@ -470,7 +470,7 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
                                {(() => {
                                    const d = new Date(selectedRentalForExtend.expectedEndDate);
                                    d.setDate(d.getDate() + extensionDays);
-                                   return d.toLocaleDateString();
+                                   return formatDateNumeric(d);
                                })()}
                            </span>
                        </div>

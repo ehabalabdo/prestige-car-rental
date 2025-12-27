@@ -81,6 +81,26 @@ export const formatDateSafe = (value: any): string => {
 };
 
 /**
+ * Formats date with numeric month (1-12) instead of month name
+ * Returns format: DD/MM/YYYY
+ */
+export const formatDateNumeric = (value: any): string => {
+  const dateStr = safeDate(value);
+  if (!dateStr) return '';
+  
+  try {
+    const date = new Date(dateStr);
+    const day = date.getDate();
+    const month = date.getMonth() + 1; // 0-based to 1-based
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch (error) {
+    console.warn('formatDateNumeric: Formatting failed', value, error);
+    return '';
+  }
+};
+
+/**
  * Removes all undefined values from object before Firestore write
  * PREVENTS: Firestore "Unsupported field value: undefined"
  */

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Car, Rental, CarStatus } from '../types';
+import { Car, Rental, CarStatus, RentalStatus } from '../types';
 import { Calendar, AlertCircle } from 'lucide-react';
 
 interface AvailabilityProps {
@@ -14,10 +14,11 @@ const Availability: React.FC<AvailabilityProps> = ({ cars, rentals }) => {
     const now = new Date();
     for (let i = 0; i < 12; i++) {
       const date = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      const monthNum = date.getMonth() + 1; // 1-12
       result.push({
         year: date.getFullYear(),
         month: date.getMonth(),
-        name: date.toLocaleDateString('ar-JO', { month: 'short', year: 'numeric' }),
+        name: `${monthNum}/${date.getFullYear()}`,
         daysInMonth: new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
       });
     }
@@ -36,10 +37,15 @@ const Availability: React.FC<AvailabilityProps> = ({ cars, rentals }) => {
     // Check rentals - only show ACTIVE rentals
     const activeRental = rentals.find(rental => {
       if (rental.carId !== carId) return false;
-      if (rental.status !== 'active') return false; // Only active rentals
+      if (rental.status !== RentalStatus.ACTIVE) return false; // Only active rentals
       
       const startDate = new Date(rental.startDate);
-      const endDate = new Date(rental.expectedEndDate || rental.endDate || rental.startDate);
+      const endDate = new Date(rental.expectedEndDate || rental.startDate);
+      
+      // Set time to midnight for accurate day comparison
+      checkDate.setHours(0, 0, 0, 0);
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
       
       return checkDate >= startDate && checkDate <= endDate;
     });
