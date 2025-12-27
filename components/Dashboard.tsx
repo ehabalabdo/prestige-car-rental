@@ -67,18 +67,6 @@ const Dashboard: React.FC<DashboardProps> = ({ cars = [], rentals = [], history 
                 <span className="flex items-center gap-2 text-red-500"><span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)]"></span> صيانة</span>
             </div>
         </div>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center px-2">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                <div className="w-1.5 h-8 bg-gold-500 rounded-full"></div>
-                إدارة الأسطول السريعة
-            </h2>
-            <div className="hidden sm:flex gap-5 text-[9px] uppercase font-bold tracking-[0.2em] bg-black-800/80 px-4 py-2 rounded-full border border-white/10">
-                <span className="flex items-center gap-2 text-green-500"><span className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]"></span> متاح</span>
-                <span className="flex items-center gap-2 text-blue-500"><span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)]"></span> مؤجر</span>
-                <span className="flex items-center gap-2 text-red-500"><span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)]"></span> صيانة</span>
-            </div>
-        </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {cars.map(car => (
