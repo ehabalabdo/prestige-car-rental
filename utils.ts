@@ -28,14 +28,16 @@ export const generateInvoicePDF = async (rental: Rental, car: Car) => {
 
   const container = document.createElement('div');
   container.id = 'invoice-print';
-  container.style.position = 'fixed';
-  container.style.left = '-9999px';
+  container.style.position = 'absolute';
+  container.style.left = '0';
   container.style.top = '0';
   container.style.width = '794px';
   container.style.background = '#fff';
   container.style.direction = 'rtl';
   container.style.textAlign = 'right';
   container.style.fontFamily = 'Cairo, Tajawal, sans-serif';
+  container.style.zIndex = '9999';
+  container.style.opacity = '0';
 
   container.innerHTML = `
     <style>
@@ -100,14 +102,16 @@ export const generatePaymentReceiptPDF = async (rental: Rental, car: Car, paymen
 
   const container = document.createElement('div');
   container.id = 'payment-receipt-print';
-  container.style.position = 'fixed';
-  container.style.left = '-9999px';
+  container.style.position = 'absolute';
+  container.style.left = '0';
   container.style.top = '0';
   container.style.width = '594px';
   container.style.background = '#fff';
   container.style.direction = 'rtl';
   container.style.textAlign = 'right';
   container.style.fontFamily = 'Cairo, Tajawal, sans-serif';
+  container.style.zIndex = '9999';
+  container.style.opacity = '0';
 
   container.innerHTML = `
     <style>
