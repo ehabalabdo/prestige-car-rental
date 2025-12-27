@@ -1,6 +1,5 @@
 import { Car, Rental, CarStatus } from './types';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import html2pdf from 'html2pdf.js';
 
 export const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('ar-JO', {
@@ -20,57 +19,63 @@ export const calculateDays = (start: string, end: string) => {
   return days > 0 ? days : 1;
 };
 
-// PDF generator via DOM render (html2canvas) to preserve Arabic shaping
+// PDF generator using html2pdf.js (HTML → Canvas → PDF) to preserve Arabic/RTL
 export const generateInvoicePDF = async (rental: Rental, car: Car) => {
   const days = calculateDays(rental.startDate, rental.actualEndDate || new Date().toISOString());
+
+  const existing = document.getElementById('invoice-print');
+  if (existing) existing.remove();
 
   const container = document.createElement('div');
   container.id = 'invoice-print';
   container.style.position = 'fixed';
   container.style.left = '-9999px';
   container.style.top = '0';
-  container.style.width = '794px'; // ~A4 width in px at 96dpi
+  container.style.width = '794px';
   container.style.background = '#fff';
-  container.style.fontFamily = 'Noto Sans Arabic, Arial, sans-serif';
+  container.style.direction = 'rtl';
+  container.style.textAlign = 'right';
+  container.style.fontFamily = 'Cairo, Tajawal, sans-serif';
+
   container.innerHTML = `
     <style>
       #invoice-print * { box-sizing: border-box; }
       #invoice-print .header { background:#111; color:#d4af37; padding:24px; text-align:center; font-size:24px; font-weight:700; }
       #invoice-print .body { padding:32px 40px 48px; color:#111; }
-      #invoice-print .row { display:flex; justify-content:space-between; margin-bottom:10px; font-size:14px; }
+      #invoice-print .row { display:flex; justify-content:space-between; margin-bottom:10px; font-size:14px; gap:12px; }
       #invoice-print .label { color:#555; font-weight:600; }
-      #invoice-print .value { color:#000; text-align:right; direction:rtl; }
-      #invoice-print .section { margin-top:18px; }
+      #invoice-print .value { color:#000; }
       #invoice-print .total { margin-top:28px; padding-top:12px; border-top:1px solid #444; text-align:right; color:#d4af37; font-size:18px; font-weight:700; }
     </style>
-    <div class="header">Vehicle Rental Invoice</div>
+    <div class="header">فاتورة تأجير مركبة</div>
     <div class="body">
-      <div class="row"><span class="label">Invoice No.</span><span class="value">${rental.id.toUpperCase()}</span></div>
-      <div class="row"><span class="label">Date</span><span class="value">${new Date().toLocaleDateString()}</span></div>
-      <div class="row"><span class="label">Customer</span><span class="value">${rental.customer.name}</span></div>
-      <div class="row"><span class="label">Phone</span><span class="value">${rental.customer.phone}</span></div>
-      <div class="row"><span class="label">Car</span><span class="value">${car.make} ${car.model} (${car.year})</span></div>
-      <div class="row"><span class="label">Plate</span><span class="value">${car.plate}</span></div>
-      <div class="row"><span class="label">Start Date</span><span class="value">${new Date(rental.startDate).toLocaleDateString()}</span></div>
-      <div class="row"><span class="label">Return Date</span><span class="value">${rental.actualEndDate ? new Date(rental.actualEndDate).toLocaleDateString() : '-'}</span></div>
-      <div class="row"><span class="label">Duration (days)</span><span class="value">${days}</span></div>
-      <div class="row"><span class="label">Base Cost</span><span class="value">${formatCurrency(rental.baseCost)}</span></div>
-      <div class="row"><span class="label">Fines</span><span class="value">${formatCurrency(rental.fineAmount || 0)}</span></div>
-      <div class="total">Total Due: ${formatCurrency(rental.totalCost)}</div>
+      <div class="row"><span class="label">رقم الفاتورة</span><span class="value">${rental.id.toUpperCase()}</span></div>
+      <div class="row"><span class="label">التاريخ</span><span class="value">${new Date().toLocaleDateString()}</span></div>
+      <div class="row"><span class="label">العميل</span><span class="value">${rental.customer.name}</span></div>
+      <div class="row"><span class="label">الهاتف</span><span class="value">${rental.customer.phone}</span></div>
+      <div class="row"><span class="label">المركبة</span><span class="value">${car.make} ${car.model} (${car.year})</span></div>
+      <div class="row"><span class="label">رقم اللوحة</span><span class="value">${car.plate}</span></div>
+      <div class="row"><span class="label">تاريخ الاستلام</span><span class="value">${new Date(rental.startDate).toLocaleDateString()}</span></div>
+      <div class="row"><span class="label">تاريخ التسليم</span><span class="value">${rental.actualEndDate ? new Date(rental.actualEndDate).toLocaleDateString() : '-'}</span></div>
+      <div class="row"><span class="label">المدة (يوم)</span><span class="value">${days}</span></div>
+      <div class="row"><span class="label">التكلفة قبل المخالفات</span><span class="value">${formatCurrency(rental.baseCost)}</span></div>
+      <div class="row"><span class="label">قيمة المخالفات</span><span class="value">${formatCurrency(rental.fineAmount || 0)}</span></div>
+      <div class="total">الإجمالي المستحق: ${formatCurrency(rental.totalCost)}</div>
     </div>
   `;
 
   document.body.appendChild(container);
-  const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-  const imgData = canvas.toDataURL('image/png');
-  const pdf = new jsPDF('p', 'pt', 'a4');
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
-  const imgWidth = pageWidth;
-  const imgHeight = canvas.height * (imgWidth / canvas.width);
-  pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
-  pdf.save(`Invoice_${rental.id}.pdf`);
-  document.body.removeChild(container);
+
+  const opts = {
+    margin: 10,
+    filename: `Invoice_${rental.id}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  } as const;
+
+  await html2pdf().set(opts).from(container).save();
+  container.remove();
 };
 
 const DEFAULT_CARS: Car[] = [
