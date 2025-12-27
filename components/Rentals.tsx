@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Car, Rental, CarStatus, RentalStatus } from '../types';
-import { generateId, formatCurrency, calculateDays } from '../utils';
-import { User, Phone, Clock, ArrowRightLeft, AlertCircle, Gauge, PlusCircle, Banknote } from 'lucide-react';
+import { generateId, formatCurrency, calculateDays, generatePaymentReceiptPDF } from '../utils';
+import { User, Phone, Clock, ArrowRightLeft, AlertCircle, Gauge, PlusCircle, Banknote, Printer } from 'lucide-react';
 import Modal from './Modal';
 
 interface RentalsProps {
@@ -301,6 +301,33 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
                          </button>
                     </div>
                 </div>
+
+                {(rental.payments || []).length > 0 && (
+                  <div className="mt-4 bg-black-900/30 p-3 rounded-xl border border-white/5">
+                    <p className="text-[9px] text-gray-500 uppercase font-bold mb-2">الدفعات المسجلة</p>
+                    <div className="space-y-2">
+                      {(rental.payments || []).map((pmt) => (
+                        <div key={pmt.id} className="flex justify-between items-center text-xs bg-black-900/40 p-2 rounded-lg">
+                          <div className="text-white">
+                            <span className="text-gray-400">{new Date(pmt.date).toLocaleDateString()}</span>
+                            <span className="mx-2">•</span>
+                            <span className="font-bold text-green-400">{formatCurrency(pmt.amount)}</span>
+                            {pmt.note && <span className="text-gray-400 ml-2">— {pmt.note}</span>}
+                          </div>
+                          {car && (
+                            <button
+                              title="طباعة سند قبض"
+                              onClick={() => { void generatePaymentReceiptPDF(rental, car, pmt); }}
+                              className="p-2 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+                            >
+                              <Printer size={16} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           );
