@@ -36,8 +36,8 @@ const Availability: React.FC<AvailabilityProps> = ({ cars, rentals }) => {
     }
 
     // Check rentals - show both ACTIVE and RESERVED rentals (based on display status)
-    const rentalOnDate = rentals.find(rental => {
-      if (rental.carId !== carId) return false;
+    for (const rental of rentals) {
+      if (rental.carId !== carId) continue;
       
       // Use display status to determine if car is booked
       const displayStatus = getRentalDisplayStatus(rental);
@@ -56,18 +56,18 @@ const Availability: React.FC<AvailabilityProps> = ({ cars, rentals }) => {
         // Range check: day is booked if checkDate >= startDate AND checkDate <= endDate
         const isInRange = checkDate_norm >= startDate_norm && checkDate_norm <= endDate_norm;
         
-        // Return status only if in date range
+        // Return status only if in date range, prioritize 'active' over 'reserved'
         if (isInRange) {
-          return displayStatus === 'active' ? 'active' : 'reserved';
+          if (displayStatus === 'active') return 'active';
+          if (displayStatus === 'reserved') return 'reserved';
         }
-        return false;
       } catch (error) {
         console.error('Date parsing error in availability check:', error);
-        return false; // If date parsing fails, treat as not booked
+        continue;
       }
-    });
+    }
 
-    return rentalOnDate ? rentalOnDate : 'available';
+    return 'available';
   };
 
   // Get status for entire month
