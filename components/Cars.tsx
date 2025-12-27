@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Car, CarStatus } from '../types';
-import { Plus, Fuel, Gauge, Trash2 } from 'lucide-react';
+import { Plus, Fuel, Gauge, Trash2, Pencil } from 'lucide-react';
 import Modal from './Modal';
 import { generateId, formatCurrency } from '../utils';
 
@@ -9,35 +9,75 @@ interface CarsProps {
   onAddCar: (car: Car) => void;
   onDeleteCar: (id: string) => void;
   onUpdateStatus: (id: string, status: CarStatus) => void;
+  onUpdateCar: (car: Car) => void;
 }
 
-const Cars: React.FC<CarsProps> = ({ cars, onAddCar, onDeleteCar, onUpdateStatus }) => {
+const Cars: React.FC<CarsProps> = ({ cars, onAddCar, onDeleteCar, onUpdateStatus, onUpdateCar }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCar, setNewCar] = useState<Partial<Car>>({
     status: CarStatus.AVAILABLE,
-    image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800'
+    image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800',
+    currentMileage: undefined
   });
+  const [editingCarId, setEditingCarId] = useState<string | null>(null);
+
+  const resetForm = () => {
+    setIsModalOpen(false);
+    setEditingCarId(null);
+    setNewCar({ status: CarStatus.AVAILABLE, image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800', currentMileage: undefined });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newCar.make && newCar.model && newCar.dailyRate) {
-      const car: Car = {
-        id: generateId(),
+    if (!newCar.make || !newCar.model || newCar.dailyRate === undefined || newCar.currentMileage === undefined) return;
+
+    const mileage = Number(newCar.currentMileage);
+    if (Number.isNaN(mileage)) return;
+
+    if (editingCarId) {
+      const existing = cars.find(c => c.id === editingCarId);
+      if (!existing) {
+        resetForm();
+        return;
+      }
+      const updatedCar: Car = {
+        ...existing,
         make: newCar.make,
         model: newCar.model,
-        year: newCar.year || new Date().getFullYear(),
-        plate: newCar.plate || '---',
-        color: newCar.color || 'أسود',
+        year: newCar.year || existing.year,
+        plate: newCar.plate || existing.plate,
+        color: newCar.color || existing.color,
         dailyRate: Number(newCar.dailyRate),
-        currentMileage: Number(newCar.currentMileage) || 0,
-        nextMaintenanceMileage: (Number(newCar.currentMileage) || 0) + 10000,
-        image: newCar.image || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800',
-        status: CarStatus.AVAILABLE
+        currentMileage: mileage,
+        nextMaintenanceMileage: mileage + 10000,
+        image: newCar.image || existing.image
       };
-      onAddCar(car);
-      setIsModalOpen(false);
-      setNewCar({ status: CarStatus.AVAILABLE, image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800' });
+      onUpdateCar(updatedCar);
+      resetForm();
+      return;
     }
+
+    const car: Car = {
+      id: generateId(),
+      make: newCar.make,
+      model: newCar.model,
+      year: newCar.year || new Date().getFullYear(),
+      plate: newCar.plate || '---',
+      color: newCar.color || 'أسود',
+      dailyRate: Number(newCar.dailyRate),
+      currentMileage: mileage,
+      nextMaintenanceMileage: mileage + 10000,
+      image: newCar.image || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800',
+      status: CarStatus.AVAILABLE
+    };
+    onAddCar(car);
+    resetForm();
+  };
+
+  const handleEditClick = (car: Car) => {
+    setEditingCarId(car.id);
+    setNewCar({ ...car });
+    setIsModalOpen(true);
   };
 
   return (
@@ -95,6 +135,9 @@ const Cars: React.FC<CarsProps> = ({ cars, onAddCar, onDeleteCar, onUpdateStatus
                     <span className="text-xl font-bold text-white">{formatCurrency(car.dailyRate)}</span>
                 </div>
                 <div className="flex gap-3">
+                  <button onClick={() => handleEditClick(car)} className="text-gray-500 hover:text-gold-500 transition-colors" title="تعديل بيانات السيارة">
+                    <Pencil size={20} />
+                  </button>
                     {car.status === CarStatus.MAINTENANCE ? (
                          <button onClick={() => onUpdateStatus(car.id, CarStatus.AVAILABLE)} className="bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-black-900 text-[10px] font-bold px-3 py-1.5 rounded transition-all">إرجاع للخدمة</button>
                     ) : (
@@ -112,7 +155,7 @@ const Cars: React.FC<CarsProps> = ({ cars, onAddCar, onDeleteCar, onUpdateStatus
         ))}
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="إضافة سيارة للأسطول - عمان">
+        <Modal isOpen={isModalOpen} onClose={resetForm} title={editingCarId ? 'تعديل بيانات السيارة' : 'إضافة سيارة للأسطول - عمان'}>
         <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -130,7 +173,7 @@ const Cars: React.FC<CarsProps> = ({ cars, onAddCar, onDeleteCar, onUpdateStatus
                 <div>
                     <label className="block text-gray-400 mb-1 text-sm">السنة</label>
                     <input required type="number" className="w-full bg-black-900 border border-white/10 rounded-lg p-3 text-white focus:border-gold-500 outline-none" 
-                        value={newCar.year || ''} onChange={e => setNewCar({...newCar, year: Number(e.target.value)})} />
+                      value={newCar.year ?? ''} onChange={e => setNewCar({...newCar, year: Number(e.target.value)})} />
                 </div>
                 <div>
                     <label className="block text-gray-400 mb-1 text-sm">رقم اللوحة</label>
@@ -147,17 +190,30 @@ const Cars: React.FC<CarsProps> = ({ cars, onAddCar, onDeleteCar, onUpdateStatus
                 <div>
                     <label className="block text-gray-400 mb-1 text-sm">السعر اليومي (د.أ)</label>
                     <input required type="number" className="w-full bg-black-900 border border-white/10 rounded-lg p-3 text-white focus:border-gold-500 outline-none" 
-                        value={newCar.dailyRate || ''} onChange={e => setNewCar({...newCar, dailyRate: Number(e.target.value)})} />
+                    value={newCar.dailyRate ?? ''} onChange={e => setNewCar({...newCar, dailyRate: Number(e.target.value)})} />
                 </div>
             </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-400 mb-1 text-sm">العداد الحالي (كم)</label>
+                  <input required type="number" className="w-full bg-black-900 border border-white/10 rounded-lg p-3 text-white focus:border-gold-500 outline-none" 
+                    value={newCar.currentMileage ?? ''} onChange={e => {
+                      const mileageValue = e.target.value === '' ? undefined : Number(e.target.value);
+                      setNewCar({...newCar, currentMileage: mileageValue});
+                    }} placeholder="مثال: 35000" />
+                </div>
+                <div>
+                  <label className="block text-gray-400 mb-1 text-sm">الحالة</label>
+                  <input type="text" disabled className="w-full bg-black-900 border border-white/10 rounded-lg p-3 text-white opacity-60" value={newCar.status || CarStatus.AVAILABLE} />
+                </div>
+              </div>
             <div>
                  <label className="block text-gray-400 mb-1 text-sm">رابط صورة السيارة</label>
                  <input type="text" className="w-full bg-black-900 border border-white/10 rounded-lg p-3 text-white focus:border-gold-500 outline-none" 
                         value={newCar.image} onChange={e => setNewCar({...newCar, image: e.target.value})} placeholder="URL لصورة السيارة" />
             </div>
-            
-            <button type="submit" className="w-full bg-gold-500 text-black-900 font-bold py-4 rounded-lg hover:bg-gold-600 transition-all mt-4 text-lg shadow-xl shadow-gold-500/20">
-                إضافة للأسطول
+              <button type="submit" className="w-full bg-gold-500 text-black-900 font-bold py-4 rounded-lg hover:bg-gold-600 transition-all mt-4 text-lg shadow-xl shadow-gold-500/20">
+                {editingCarId ? 'حفظ التعديلات' : 'إضافة للأسطول'}
             </button>
         </form>
       </Modal>

@@ -188,6 +188,13 @@ const App: React.FC = () => {
     }
   };
 
+  const updateCarDetails = (updatedCar: Car) => {
+    setCars(prev => prev.map(c => c.id === updatedCar.id ? updatedCar : c));
+    if (isAuthenticated) {
+      updateCarInFirestore(updatedCar).catch(err => console.warn('Failed to update car:', err));
+    }
+  };
+
   const createRental = (rental: Rental) => {
     setRentals([...rentals, rental]);
     const updatedCars = cars.map(c => c.id === rental.carId ? { ...c, status: CarStatus.RENTED } : c);
@@ -315,7 +322,8 @@ const App: React.FC = () => {
               cars={cars} 
               onAddCar={addCar} 
               onDeleteCar={deleteCar} 
-              onUpdateStatus={updateCarStatus} 
+              onUpdateStatus={updateCarStatus}
+              onUpdateCar={updateCarDetails}
             />
           )}
           {activeTab === 'rentals' && (
