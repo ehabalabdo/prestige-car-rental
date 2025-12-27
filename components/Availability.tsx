@@ -33,12 +33,13 @@ const Availability: React.FC<AvailabilityProps> = ({ cars, rentals }) => {
       return 'maintenance';
     }
 
-    // Check rentals
+    // Check rentals - only show ACTIVE rentals
     const activeRental = rentals.find(rental => {
       if (rental.carId !== carId) return false;
+      if (rental.status !== 'active') return false; // Only active rentals
       
       const startDate = new Date(rental.startDate);
-      const endDate = new Date(rental.endDate || rental.actualEndDate || rental.startDate);
+      const endDate = new Date(rental.expectedEndDate || rental.endDate || rental.startDate);
       
       return checkDate >= startDate && checkDate <= endDate;
     });

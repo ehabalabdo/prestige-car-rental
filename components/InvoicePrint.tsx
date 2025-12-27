@@ -9,10 +9,10 @@ interface InvoicePrintProps {
 }
 
 const InvoicePrint: React.FC<InvoicePrintProps> = ({ rental, car, onClose }) => {
-  // Sanitize data
-  const customerName = safeString(rental?.customer?.name || rental?.customerName || 'غير محدد');
-  const customerPhone = safeString(rental?.customer?.phone || rental?.customerPhone || 'غير محدد');
-  const carBrand = safeString(car?.brand || car?.make || 'غير محدد');
+  // Sanitize data - read from rental.customer object
+  const customerName = safeString(rental?.customer?.name || 'غير محدد');
+  const customerPhone = safeString(rental?.customer?.phone || 'غير محدد');
+  const carBrand = safeString(car?.brand || 'غير محدد');
   const carModel = safeString(car?.model || 'غير محدد');
   const carYear = safeNumber(car?.year);
   const carPlate = safeString(car?.plate || 'غير محدد');
