@@ -3,7 +3,8 @@ import { Car, Rental, CarStatus, RentalStatus } from '../types';
 import { generateId, formatCurrency, calculateDays, getRentalDisplayStatus, getStatusLabel, getStatusColor } from '../utils';
 import { formatDateNumeric } from '@/utils/date';
 
-import { User, Phone, Clock, ArrowRightLeft, AlertCircle, Gauge, PlusCircle, Banknote } from 'lucide-react';
+import { User, Phone, Clock, ArrowRightLeft, AlertCircle, Gauge, PlusCircle, Banknote, Camera } from 'lucide-react';
+import { toPng } from 'html-to-image';
 import Modal from './Modal';
 
 interface RentalsProps {
@@ -295,7 +296,7 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
         {rentals.map((rental) => {
           const car = cars.find(c => c.id === rental.carId);
           return (
-            <div key={rental.id} className="bg-black-800 p-6 rounded-[2.5rem] border border-gold-500/10 shadow-2xl relative overflow-hidden group hover:border-gold-500/40 transition-all">
+            <div id={`rental-card-${rental.id}`} key={rental.id} className="bg-black-800 p-6 rounded-[2.5rem] border border-gold-500/10 shadow-2xl relative overflow-hidden group hover:border-gold-500/40 transition-all">
               <div className="flex justify-between items-start mb-6">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-gold-500/10 rounded-2xl text-gold-500">
@@ -337,6 +338,59 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
                 <div className="flex justify-between items-center pt-4 border-t border-white/5">
                     <div>
                         <p className="text-[9px] text-gray-500 uppercase font-bold">إجمالي التكلفة</p>
+                    {/* Actions Row */}
+                    <div className="flex items-center gap-3 mt-4">
+                      <button
+                        type="button"
+                        className="px-3 py-2 rounded-xl bg-black-900/40 border border-white/10 text-white text-xs flex items-center gap-2 hover:bg-black-900/60"
+                        onClick={async () => {
+                          const node = document.getElementById(`rental-card-${rental.id}`);
+                          if (!node) {
+                            alert('تعذر العثور على بطاقة العقد');
+                            return;
+                          }
+                          // Build wrapper with header + cloned card
+                          const wrapper = document.createElement('div');
+                          wrapper.style.padding = '16px';
+                          wrapper.style.background = '#0b0b0f';
+                          wrapper.style.borderRadius = '20px';
+                          wrapper.style.width = `${node.clientWidth}px`;
+                          wrapper.style.color = '#fff';
+                          wrapper.style.fontFamily = 'system-ui, -apple-system, Segoe UI, Roboto, Arial';
+
+                          const header = document.createElement('div');
+                          header.style.display = 'flex';
+                          header.style.alignItems = 'center';
+                          header.style.gap = '8px';
+                          header.style.marginBottom = '12px';
+                          header.innerHTML = `
+                            <div style="padding:6px;border-radius:10px;background:#d4af37;color:#000;font-weight:700">PRESTIGE</div>
+                            <div style="font-size:12px;color:#9ca3af;font-weight:700;letter-spacing:1px">JORDAN ELITE</div>
+                          `;
+                          const cloned = node.cloneNode(true) as HTMLElement;
+                          cloned.style.marginTop = '8px';
+                          wrapper.appendChild(header);
+                          wrapper.appendChild(cloned);
+                          document.body.appendChild(wrapper);
+                          try {
+                            const dataUrl = await toPng(wrapper, { cacheBust: true, pixelRatio: 2 });
+                            const a = document.createElement('a');
+                            a.href = dataUrl;
+                            a.download = `Invoice_${rental.id}.png`;
+                            a.click();
+                          } catch (err) {
+                            console.error('capture failed', err);
+                            alert('حدث خطأ أثناء التقاط الصورة');
+                          } finally {
+                            document.body.removeChild(wrapper);
+                          }
+                        }}
+                      >
+                        <Camera size={14} />
+                        تصوير الفاتورة
+                      </button>
+                    </div>
+
                         <p className="text-lg font-bold text-gold-500">{formatCurrency(rental.totalCost)}</p>
                         <p className="text-[11px] text-gray-400">المخالفات: {formatCurrency((rental.fines || []).reduce((s,f)=>s+(f.amount||0),0))}</p>
                         <p className="text-[11px] text-gray-400">الدفعات: {formatCurrency((rental.payments || []).reduce((s,p)=>s+(p.amount||0),0))}</p>
