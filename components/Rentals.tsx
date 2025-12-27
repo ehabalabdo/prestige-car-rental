@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
+import { pdf } from '@react-pdf/renderer';
 import { Car, Rental, CarStatus, RentalStatus } from '../types';
-import { generateId, formatCurrency, calculateDays, generatePaymentReceiptPDF } from '../utils';
+import { generateId, formatCurrency, calculateDays } from '../utils';
+import PaymentReceiptPDF from './PaymentReceiptPDF';
 import { User, Phone, Clock, ArrowRightLeft, AlertCircle, Gauge, PlusCircle, Banknote, Printer } from 'lucide-react';
 import Modal from './Modal';
 
@@ -335,7 +337,20 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
                           {car && (
                             <button
                               title="طباعة سند قبض"
-                              onClick={() => { void generatePaymentReceiptPDF(rental, car, pmt); }}
+                              onClick={async () => {
+                                try {
+                                  const receiptBlob = await pdf(<PaymentReceiptPDF rental={rental} car={car} payment={pmt} />).toBlob();
+                                  const url = URL.createObjectURL(receiptBlob);
+                                  const link = document.createElement('a');
+                                  link.href = url;
+                                  link.download = `Receipt_${rental.id}_${pmt.id}.pdf`;
+                                  link.click();
+                                  URL.revokeObjectURL(url);
+                                } catch (error) {
+                                  console.error('Receipt generation failed:', error);
+                                  alert('فشل إنشاء السند');
+                                }
+                              }}
                               className="p-2 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 rounded-xl transition-all"
                             >
                               <Printer size={16} />

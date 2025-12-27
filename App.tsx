@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { pdf } from '@react-pdf/renderer';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import Cars from './components/Cars';
 import Rentals from './components/Rentals';
 import History from './components/History';
 import Maintenance from './components/Maintenance';
+import InvoicePDF from './components/InvoicePDF';
+import PaymentReceiptPDF from './components/PaymentReceiptPDF';
 import { Menu } from 'lucide-react';
 import { Car, Rental, CarStatus, RentalStatus } from './types';
-import { getInitialData, generateInvoicePDF, generatePaymentReceiptPDF } from './utils';
+import { getInitialData } from './utils';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase';
 import {
@@ -249,10 +252,35 @@ const App: React.FC = () => {
          currentMileage: endMileage 
        } : c);
        setCars(updatedCars);
-       void generateInvoicePDF(completedRental, car);
-       (completedRental.payments || []).forEach(p => {
-         void generatePaymentReceiptPDF(completedRental, car, p);
-       });
+       
+       // Generate invoice PDF
+       const generatePDFs = async () => {
+         try {
+           const invoiceBlob = await pdf(<InvoicePDF rental={completedRental} car={car} />).toBlob();
+           const invoiceUrl = URL.createObjectURL(invoiceBlob);
+           const invoiceLink = document.createElement('a');
+           invoiceLink.href = invoiceUrl;
+           invoiceLink.download = `Invoice_${completedRental.id}.pdf`;
+           invoiceLink.click();
+           URL.revokeObjectURL(invoiceUrl);
+
+           // Generate payment receipts
+           for (const payment of completedRental.payments || []) {
+             const receiptBlob = await pdf(<PaymentReceiptPDF rental={completedRental} car={car} payment={payment} />).toBlob();
+             const receiptUrl = URL.createObjectURL(receiptBlob);
+             const receiptLink = document.createElement('a');
+             receiptLink.href = receiptUrl;
+             receiptLink.download = `Receipt_${completedRental.id}_${payment.id}.pdf`;
+             receiptLink.click();
+             URL.revokeObjectURL(receiptUrl);
+           }
+         } catch (error) {
+           console.error('PDF generation failed:', error);
+         }
+       };
+       
+       void generatePDFs();
+       
        if (exceededMaintenance) {
          alert('تنبيه: المركبة تجاوزت عداد الصيانة وتحتاج إلى صيانة');
        }
