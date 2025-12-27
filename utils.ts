@@ -54,6 +54,10 @@ export const generateInvoicePDF = async (rental: Rental, car: Car) => {
   await ensureArabicFont(doc);
   doc.setR2L(true);
   doc.setLanguage('ar');
+
+  const writeRtl = (text: string, x: number, y: number, align: 'left' | 'center' | 'right' = 'right') => {
+    doc.text(text, x, y, { align, isInputRtl: true });
+  };
   
   // Header
   doc.setFillColor(17, 17, 17); // #111111
@@ -61,7 +65,7 @@ export const generateInvoicePDF = async (rental: Rental, car: Car) => {
   
   doc.setTextColor(212, 175, 55); // #d4af37
   doc.setFontSize(22);
-  doc.text('إيصال / فاتورة تأجير مركبة', 105, 20, { align: 'center' });
+  writeRtl('إيصال / فاتورة تأجير مركبة', 105, 20, 'center');
   
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(12);
@@ -73,7 +77,7 @@ export const generateInvoicePDF = async (rental: Rental, car: Car) => {
   let y = 60;
   const addLine = (label: string, value: string) => {
     doc.setFont('NotoSansArabic', 'normal');
-    doc.text(`${label}: ${value}`, 190, y, { align: 'right' });
+    writeRtl(`${label}: ${value}`, 190, y, 'right');
     y += 10;
   };
 
@@ -102,7 +106,7 @@ export const generateInvoicePDF = async (rental: Rental, car: Car) => {
   doc.setFont('NotoSansArabic', 'normal');
   doc.setFontSize(16);
   doc.setTextColor(212, 175, 55);
-  doc.text(`الإجمالي المستحق: ${formatCurrency(rental.totalCost)}`, 190, y, { align: 'right' });
+  writeRtl(`الإجمالي المستحق: ${formatCurrency(rental.totalCost)}`, 190, y, 'right');
 
   doc.save(`Invoice_${rental.id}.pdf`);
 };
