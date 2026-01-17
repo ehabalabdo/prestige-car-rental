@@ -42,8 +42,28 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onLogout, on
 
       <div className={sidebarClasses}>
         <div className="p-6 border-b border-white/10 flex flex-col items-center">
-          <img src="/assets/logo.svg" alt="Prestige Logo" className="w-32 h-20 mb-4 object-contain drop-shadow-lg" />
-          <h1 className="text-base font-bold text-gold-500 tracking-wider text-center font-serif">
+          <div className="w-32 h-20 mb-4">
+            <svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
+              <g fill="none" stroke="#d4af37" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M 100 80 Q 120 40 150 60 Q 130 70 140 100"/>
+                <path d="M 150 60 L 200 20 L 250 60"/>
+                <path d="M 250 60 Q 270 40 300 80 Q 280 70 270 100"/>
+                <path d="M 50 100 Q 200 100 350 100"/>
+                <path d="M 350 100 Q 500 100 750 100"/>
+              </g>
+              <text x="400" y="150" fontFamily="serif" fontSize="48" fontWeight="bold" fill="#d4af37" textAnchor="middle" letterSpacing="3">
+                PRESTIGE
+              </text>
+              <text x="400" y="175" fontFamily="serif" fontSize="32" fill="#d4af37" textAnchor="middle" letterSpacing="8">
+                JORDAN ELITE
+              </text>
+              <g fill="none" stroke="#d4af37" strokeWidth="2" opacity="0.7">
+                <path d="M 200 185 Q 250 180 300 185"/>
+                <path d="M 500 185 Q 550 180 600 185"/>
+              </g>
+            </svg>
+          </div>
+          <h1 className="text-sm font-bold text-gold-500 tracking-wider text-center font-serif hidden">
               PRESTIGE<br/>
               <span className="text-[10px] font-bold tracking-[0.4em] uppercase">Jordan Elite</span>
           </h1>
