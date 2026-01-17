@@ -8,6 +8,7 @@ import Maintenance from './components/Maintenance';
 import Availability from './components/Availability';
 import InvoicePrint from './components/InvoicePrint';
 import Notifications from './components/Notifications';
+import LogoUpload from './components/LogoUpload';
 import { Menu, Bell, Sun, Moon } from 'lucide-react';
 import { Car, Rental, CarStatus, RentalStatus, MaintenanceRecord } from './types';
 import { getInitialData, formatCurrency, calculateDays } from './utils';
@@ -104,6 +105,10 @@ const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
     return saved !== 'light';
+  });
+  const [isLogoUploadOpen, setIsLogoUploadOpen] = useState(false);
+  const [customLogo, setCustomLogo] = useState<string | null>(() => {
+    return localStorage.getItem('prestige_logo');
   });
   
   const [cars, setCars] = useState<Car[]>([]);
@@ -416,6 +421,8 @@ const App: React.FC = () => {
         onNotificationsClick={() => setIsNotificationsOpen(true)}
         onThemeToggle={() => setIsDarkMode(!isDarkMode)}
         isDarkMode={isDarkMode}
+        onLogoUploadClick={() => setIsLogoUploadOpen(true)}
+        customLogo={customLogo}
         notificationCount={(() => {
           const maintenanceCount = cars.filter(car => {
             const currentMileage = car.currentMileage ?? 0;
@@ -445,25 +452,29 @@ const App: React.FC = () => {
             <Menu size={28} />
         </button>
         <div className="w-20 h-12">
-          <svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
-            <g fill="none" stroke="#d4af37" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M 100 80 Q 120 40 150 60 Q 130 70 140 100"/>
-              <path d="M 150 60 L 200 20 L 250 60"/>
-              <path d="M 250 60 Q 270 40 300 80 Q 280 70 270 100"/>
-              <path d="M 50 100 Q 200 100 350 100"/>
-              <path d="M 350 100 Q 500 100 750 100"/>
-            </g>
-            <text x="400" y="150" fontFamily="serif" fontSize="48" fontWeight="bold" fill="#d4af37" textAnchor="middle" letterSpacing="3">
-              PRESTIGE
-            </text>
-            <text x="400" y="175" fontFamily="serif" fontSize="32" fill="#d4af37" textAnchor="middle" letterSpacing="8">
-              JORDAN ELITE
-            </text>
-            <g fill="none" stroke="#d4af37" strokeWidth="2" opacity="0.7">
-              <path d="M 200 185 Q 250 180 300 185"/>
-              <path d="M 500 185 Q 550 180 600 185"/>
-            </g>
-          </svg>
+          {customLogo ? (
+            <img src={customLogo} alt="Logo" className="w-full h-full object-contain" />
+          ) : (
+            <svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
+              <g fill="none" stroke="#d4af37" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M 100 80 Q 120 40 150 60 Q 130 70 140 100"/>
+                <path d="M 150 60 L 200 20 L 250 60"/>
+                <path d="M 250 60 Q 270 40 300 80 Q 280 70 270 100"/>
+                <path d="M 50 100 Q 200 100 350 100"/>
+                <path d="M 350 100 Q 500 100 750 100"/>
+              </g>
+              <text x="400" y="150" fontFamily="serif" fontSize="48" fontWeight="bold" fill="#d4af37" textAnchor="middle" letterSpacing="3">
+                PRESTIGE
+              </text>
+              <text x="400" y="175" fontFamily="serif" fontSize="32" fill="#d4af37" textAnchor="middle" letterSpacing="8">
+                JORDAN ELITE
+              </text>
+              <g fill="none" stroke="#d4af37" strokeWidth="2" opacity="0.7">
+                <path d="M 200 185 Q 250 180 300 185"/>
+                <path d="M 500 185 Q 550 180 600 185"/>
+              </g>
+            </svg>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -567,6 +578,13 @@ const App: React.FC = () => {
         cars={cars}
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
+      />
+
+      {/* Logo Upload Modal */}
+      <LogoUpload 
+        isOpen={isLogoUploadOpen}
+        onClose={() => setIsLogoUploadOpen(false)}
+        onLogoChange={(logo) => setCustomLogo(logo)}
       />
     </div>
   );
