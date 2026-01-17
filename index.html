@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" class="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="https://lucide.dev/favicon.ico" />
@@ -36,22 +36,91 @@
       }
     </script>
     <style>
-      body {
+      /* Dark Mode (Default) */
+      html.dark {
         background-color: #111111;
         color: #f3f4f6;
       }
-      /* Custom Scrollbar */
-      ::-webkit-scrollbar {
+
+      html.dark body {
+        background-color: #111111;
+        color: #f3f4f6;
+      }
+
+      /* Light Mode */
+      html.light {
+        background-color: #f9fafb;
+        color: #1f2937;
+      }
+
+      html.light body {
+        background-color: #f9fafb;
+        color: #1f2937;
+      }
+
+      html.light .bg-black-900 {
+        background-color: #f3f4f6 !important;
+      }
+
+      html.light .bg-black-800 {
+        background-color: #e5e7eb !important;
+      }
+
+      html.light .bg-black-700 {
+        background-color: #d1d5db !important;
+      }
+
+      html.light .text-white {
+        color: #111111 !important;
+      }
+
+      html.light .text-gray-400 {
+        color: #6b7280 !important;
+      }
+
+      html.light .text-gray-500 {
+        color: #6b7280 !important;
+      }
+
+      html.light .border-white\/10 {
+        border-color: rgba(0, 0, 0, 0.1) !important;
+      }
+
+      html.light .border-white\/5 {
+        border-color: rgba(0, 0, 0, 0.05) !important;
+      }
+
+      html.light .bg-white\/5 {
+        background-color: rgba(0, 0, 0, 0.03) !important;
+      }
+
+      /* Custom Scrollbar - Dark */
+      html.dark ::-webkit-scrollbar {
         width: 8px;
       }
-      ::-webkit-scrollbar-track {
+      html.dark ::-webkit-scrollbar-track {
         background: #111111;
       }
-      ::-webkit-scrollbar-thumb {
+      html.dark ::-webkit-scrollbar-thumb {
         background: #2a2a2a;
         border-radius: 4px;
       }
-      ::-webkit-scrollbar-thumb:hover {
+      html.dark ::-webkit-scrollbar-thumb:hover {
+        background: #d4af37;
+      }
+
+      /* Custom Scrollbar - Light */
+      html.light ::-webkit-scrollbar {
+        width: 8px;
+      }
+      html.light ::-webkit-scrollbar-track {
+        background: #f9fafb;
+      }
+      html.light ::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 4px;
+      }
+      html.light ::-webkit-scrollbar-thumb:hover {
         background: #d4af37;
       }
       

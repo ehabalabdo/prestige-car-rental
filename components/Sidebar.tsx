@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Car, Key, History, Wrench, LogOut, X, ShieldCheck, Calendar } from 'lucide-react';
+import { LayoutDashboard, Car, Key, History, Wrench, LogOut, X, ShieldCheck, Calendar, Bell, Sun, Moon } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -8,9 +8,13 @@ interface SidebarProps {
   onReset: () => void;
   isOpen: boolean;
   onClose: () => void;
+  onNotificationsClick?: () => void;
+  onThemeToggle?: () => void;
+  isDarkMode?: boolean;
+  notificationCount?: number;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onLogout, onReset, isOpen, onClose }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onLogout, onReset, isOpen, onClose, onNotificationsClick, onThemeToggle, isDarkMode, notificationCount = 0 }) => {
   const menuItems = [
     { id: 'dashboard', label: 'الرئيسية', icon: <LayoutDashboard size={20} /> },
     { id: 'fleet', label: 'الأسطول', icon: <Car size={20} /> },
@@ -72,10 +76,33 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onLogout, on
           ))}
         </nav>
 
-        <div className="p-4 border-t border-white/10 bg-black-800/50">
+        <div className="p-4 border-t border-white/10 bg-black-800/50 space-y-2">
+          {onNotificationsClick && (
+            <button 
+              onClick={onNotificationsClick}
+              className="w-full flex items-center gap-4 px-4 py-3 text-gold-400 hover:bg-gold-500/10 rounded-lg transition-colors text-sm relative"
+            >
+              <Bell size={18} />
+              <span>الإشعارات</span>
+              {notificationCount > 0 && (
+                <span className="absolute left-3 bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {notificationCount}
+                </span>
+              )}
+            </button>
+          )}
+          {onThemeToggle && (
+            <button 
+              onClick={onThemeToggle}
+              className="w-full flex items-center gap-4 px-4 py-3 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors text-sm"
+            >
+              {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+              <span>{isDarkMode ? 'الوضع الفاتح' : 'الوضع الداكن'}</span>
+            </button>
+          )}
           <button 
             onClick={onReset}
-            className="w-full mb-2 flex items-center gap-4 px-4 py-3 text-yellow-400 hover:bg-yellow-500/10 rounded-lg transition-colors text-sm"
+            className="w-full flex items-center gap-4 px-4 py-3 text-yellow-400 hover:bg-yellow-500/10 rounded-lg transition-colors text-sm"
           >
             <ShieldCheck size={18} />
             <span>إعادة ضبط النظام</span>

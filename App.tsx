@@ -7,7 +7,8 @@ import History from './components/History';
 import Maintenance from './components/Maintenance';
 import Availability from './components/Availability';
 import InvoicePrint from './components/InvoicePrint';
-import { Menu } from 'lucide-react';
+import Notifications from './components/Notifications';
+import { Menu, Bell, Sun, Moon } from 'lucide-react';
 import { Car, Rental, CarStatus, RentalStatus, MaintenanceRecord } from './types';
 import { getInitialData, formatCurrency, calculateDays } from './utils';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
@@ -99,10 +100,28 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [preSelectedCarId, setPreSelectedCarId] = useState<string | null>(null);
   const [invoiceToPrint, setInvoiceToPrint] = useState<{ rental: Rental; car: Car } | null>(null);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    return saved !== 'light';
+  });
   
   const [cars, setCars] = useState<Car[]>([]);
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [history, setHistory] = useState<Rental[]>([]);
+
+  // تطبيق الثيم على الصفحة
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.remove('light');
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -394,6 +413,30 @@ const App: React.FC = () => {
         onReset={handleReset}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        onNotificationsClick={() => setIsNotificationsOpen(true)}
+        onThemeToggle={() => setIsDarkMode(!isDarkMode)}
+        isDarkMode={isDarkMode}
+        notificationCount={(() => {
+          const maintenanceCount = cars.filter(car => {
+            const currentMileage = car.currentMileage ?? 0;
+            const lastMaintenance = car.lastMaintenanceMileage ?? 0;
+            const interval = car.maintenanceIntervalKm ?? 8000;
+            const nextMaintenance = lastMaintenance + interval;
+            const remainingKm = nextMaintenance - currentMileage;
+            return remainingKm <= 500 && remainingKm >= 0;
+          }).length;
+
+          const insuranceCount = cars.filter(car => {
+            if (!car.insuranceEndDate) return false;
+            const endDate = new Date(car.insuranceEndDate);
+            const today = new Date();
+            const diffTime = endDate.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays <= 30;
+          }).length;
+
+          return maintenanceCount + insuranceCount;
+        })()}
       />
       
       {/* Mobile Top Bar */}
@@ -401,6 +444,46 @@ const App: React.FC = () => {
         <button onClick={() => setIsSidebarOpen(true)} className="text-gold-500">
             <Menu size={28} />
         </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsNotificationsOpen(true)}
+            className="relative p-2 rounded-lg hover:bg-white/5 transition-colors"
+          >
+            <Bell size={20} className="text-gold-500" />
+            {(() => {
+              const maintenanceCount = cars.filter(car => {
+                const currentMileage = car.currentMileage ?? 0;
+                const lastMaintenance = car.lastMaintenanceMileage ?? 0;
+                const interval = car.maintenanceIntervalKm ?? 8000;
+                const nextMaintenance = lastMaintenance + interval;
+                const remainingKm = nextMaintenance - currentMileage;
+                return remainingKm <= 500 && remainingKm >= 0;
+              }).length;
+
+              const insuranceCount = cars.filter(car => {
+                if (!car.insuranceEndDate) return false;
+                const endDate = new Date(car.insuranceEndDate);
+                const today = new Date();
+                const diffTime = endDate.getTime() - today.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays <= 30;
+              }).length;
+
+              const total = maintenanceCount + insuranceCount;
+              return total > 0 ? (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {total}
+                </span>
+              ) : null;
+            })()}
+          </button>
+          <button
+            onClick={() => setIsDarkMode(!isDarkMode)}
+            className="p-2 rounded-lg hover:bg-white/5 transition-colors"
+          >
+            {isDarkMode ? <Sun size={20} className="text-gold-500" /> : <Moon size={20} className="text-gold-500" />}
+          </button>
+        </div>
         <div className="text-right">
             <p className="text-xs font-bold text-white leading-tight">PRESTIGE RENTAL</p>
             <p className="text-[8px] text-gold-500 tracking-widest text-left uppercase">Jordan Elite</p>
@@ -457,6 +540,13 @@ const App: React.FC = () => {
           onClose={() => setInvoiceToPrint(null)}
         />
       )}
+
+      {/* Notifications Modal */}
+      <Notifications 
+        cars={cars}
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+      />
     </div>
   );
 };
