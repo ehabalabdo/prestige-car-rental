@@ -55,7 +55,9 @@ const Cars: React.FC<CarsProps> = ({ cars, onAddCar, onDeleteCar, onUpdateStatus
         currentMileage: mileage,
         maintenanceIntervalKm: interval,
         lastMaintenanceMileage: newCar.lastMaintenanceMileage ?? existing.lastMaintenanceMileage ?? mileage,
-        image: newCar.image || existing.image
+        image: newCar.image || existing.image,
+        insuranceStartDate: newCar.insuranceStartDate || undefined,
+        insuranceEndDate: newCar.insuranceEndDate || undefined
       };
       onUpdateCar(updatedCar);
       resetForm();
