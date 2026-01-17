@@ -444,6 +444,7 @@ const App: React.FC = () => {
         <button onClick={() => setIsSidebarOpen(true)} className="text-gold-500">
             <Menu size={28} />
         </button>
+        <img src="/assets/logo.svg" alt="Logo" className="h-12 object-contain" />
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsNotificationsOpen(true)}

@@ -41,13 +41,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onLogout, on
       )}
 
       <div className={sidebarClasses}>
-        <div className="p-8 border-b border-white/10 flex flex-col items-center">
-          <div className="mb-4 p-3 bg-gradient-to-br from-gold-600 to-gold-400 rounded-2xl shadow-[0_0_20px_rgba(212,175,55,0.3)]">
-            <ShieldCheck size={40} className="text-black-900" />
-          </div>
-          <h1 className="text-2xl font-bold text-white tracking-wider text-center flex-1 font-serif">
+        <div className="p-6 border-b border-white/10 flex flex-col items-center">
+          <img src="/assets/logo.svg" alt="Prestige Logo" className="w-32 h-20 mb-4 object-contain drop-shadow-lg" />
+          <h1 className="text-base font-bold text-gold-500 tracking-wider text-center font-serif">
               PRESTIGE<br/>
-              <span className="text-gold-500 text-[10px] font-bold tracking-[0.4em] uppercase">Jordan Elite</span>
+              <span className="text-[10px] font-bold tracking-[0.4em] uppercase">Jordan Elite</span>
           </h1>
           <button onClick={onClose} className="lg:hidden absolute top-4 left-4 text-gray-400 hover:text-white">
             <X size={24} />

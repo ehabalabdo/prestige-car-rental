@@ -1,0 +1,33 @@
+<svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+  <!-- Crown/Decoration Top -->
+  <g fill="none" stroke="#d4af37" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Left scroll -->
+    <path d="M 100 80 Q 120 40 150 60 Q 130 70 140 100"/>
+    
+    <!-- Center crown point -->
+    <path d="M 150 60 L 200 20 L 250 60"/>
+    
+    <!-- Right scroll -->
+    <path d="M 250 60 Q 270 40 300 80 Q 280 70 270 100"/>
+    
+    <!-- Left line -->
+    <path d="M 50 100 Q 200 100 350 100"/>
+    
+    <!-- Right line -->
+    <path d="M 350 100 Q 500 100 750 100"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="400" y="150" font-family="serif" font-size="48" font-weight="bold" fill="#d4af37" text-anchor="middle" letter-spacing="3">
+    PRESTIGE
+  </text>
+  <text x="400" y="175" font-family="serif" font-size="32" fill="#d4af37" text-anchor="middle" letter-spacing="8">
+    JORDAN ELITE
+  </text>
+  
+  <!-- Bottom decoration -->
+  <g fill="none" stroke="#d4af37" stroke-width="2" opacity="0.7">
+    <path d="M 200 185 Q 250 180 300 185"/>
+    <path d="M 500 185 Q 550 180 600 185"/>
+  </g>
+</svg>
