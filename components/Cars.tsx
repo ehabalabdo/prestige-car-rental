@@ -71,10 +71,12 @@ const Cars: React.FC<CarsProps> = ({ cars, onAddCar, onDeleteCar, onUpdateStatus
       color: newCar.color || 'أسود',
       dailyRate: Number(newCar.dailyRate),
       currentMileage: mileage,
+      nextMaintenanceMileage: mileage + interval,
       maintenanceIntervalKm: interval,
       lastMaintenanceMileage: mileage,
       image: newCar.image || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800',
-      status: CarStatus.AVAILABLE
+      status: CarStatus.AVAILABLE,
+      maintenanceHistory: []
     };
     onAddCar(car);
     resetForm();
@@ -100,9 +102,15 @@ const Cars: React.FC<CarsProps> = ({ cars, onAddCar, onDeleteCar, onUpdateStatus
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {cars.map((car) => (
-          <div key={car.id} className="group bg-black-800 rounded-xl overflow-hidden border border-white/5 hover:border-gold-500/50 transition-all shadow-lg relative flex flex-col">
-             <div className="absolute top-4 right-4 z-10">
+        {cars.map((car) => {
+          // Check if insurance is expired
+          const isInsuranceExpired = car.insuranceEndDate && new Date(car.insuranceEndDate) < new Date();
+          
+          return (
+          <div key={car.id} className={`group bg-black-800 rounded-xl overflow-hidden border transition-all shadow-lg relative flex flex-col ${
+            isInsuranceExpired ? 'border-orange-500/50 hover:border-orange-500' : 'border-white/5 hover:border-gold-500/50'
+          }`}>
+             <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
                 <span className={`px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
                     car.status === CarStatus.AVAILABLE ? 'bg-green-500 text-black' :
                     car.status === CarStatus.RENTED ? 'bg-blue-500 text-white' :
@@ -110,6 +118,11 @@ const Cars: React.FC<CarsProps> = ({ cars, onAddCar, onDeleteCar, onUpdateStatus
                 }`}>
                     {car.status}
                 </span>
+                {isInsuranceExpired && (
+                  <span className="px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-orange-500 text-white">
+                    انتهى التأمين
+                  </span>
+                )}
              </div>
             <div className="h-52 overflow-hidden relative">
               <img src={car.image} alt={car.model} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
@@ -143,6 +156,18 @@ const Cars: React.FC<CarsProps> = ({ cars, onAddCar, onDeleteCar, onUpdateStatus
                 </div>
               </div>
               
+              {car.insuranceEndDate && (
+                <div className={`text-xs p-3 rounded-lg border ${
+                  isInsuranceExpired ? 'bg-orange-500/10 border-orange-500/30 text-orange-400' : 'bg-green-500/10 border-green-500/30 text-green-400'
+                }`}>
+                  <p className="font-bold mb-1">{isInsuranceExpired ? '⚠️ انتهى التأمين' : '✓ التأمين ساري'}</p>
+                  <p className="text-[10px]">
+                    {car.insuranceStartDate && `من ${new Date(car.insuranceStartDate).toLocaleDateString('ar-JO')} `}
+                    حتى {new Date(car.insuranceEndDate).toLocaleDateString('ar-JO')}
+                  </p>
+                </div>
+              )}
+              
               <div className="flex justify-between items-center border-t border-white/10 pt-5">
                 <div className="flex flex-col">
                     <span className="text-[10px] text-gray-500 uppercase">Daily Rate</span>
@@ -166,7 +191,8 @@ const Cars: React.FC<CarsProps> = ({ cars, onAddCar, onDeleteCar, onUpdateStatus
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
         <Modal isOpen={isModalOpen} onClose={resetForm} title={editingCarId ? 'تعديل بيانات السيارة' : 'إضافة سيارة للأسطول - عمان'}>
@@ -202,7 +228,7 @@ const Cars: React.FC<CarsProps> = ({ cars, onAddCar, onDeleteCar, onUpdateStatus
                         value={newCar.color || ''} onChange={e => setNewCar({...newCar, color: e.target.value})} />
                 </div>
                 <div>
-                    <label className="block text-gray-400 mb-1 text-sm">السعر اليومي (د.أ)</label>
+                    <label className="block text-gray-400 mb-1 text-sm">السعر اليومي (د.ا)</label>
                     <input required type="number" className="w-full bg-black-900 border border-white/10 rounded-lg p-3 text-white focus:border-gold-500 outline-none" 
                     value={newCar.dailyRate ?? ''} onChange={e => setNewCar({...newCar, dailyRate: Number(e.target.value)})} />
                 </div>
@@ -230,6 +256,18 @@ const Cars: React.FC<CarsProps> = ({ cars, onAddCar, onDeleteCar, onUpdateStatus
                 <label className="block text-gray-400 mb-1 text-sm">الحالة</label>
                 <input type="text" disabled className="w-full bg-black-900 border border-white/10 rounded-lg p-3 text-white opacity-60" value={newCar.status || CarStatus.AVAILABLE} />
               </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-400 mb-1 text-sm">تاريخ بداية التأمين</label>
+                <input type="date" className="w-full bg-black-900 border border-white/10 rounded-lg p-3 text-white focus:border-gold-500 outline-none" 
+                  value={newCar.insuranceStartDate || ''} onChange={e => setNewCar({...newCar, insuranceStartDate: e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-gray-400 mb-1 text-sm">تاريخ انتهاء التأمين</label>
+                <input type="date" className="w-full bg-black-900 border border-white/10 rounded-lg p-3 text-white focus:border-gold-500 outline-none" 
+                  value={newCar.insuranceEndDate || ''} onChange={e => setNewCar({...newCar, insuranceEndDate: e.target.value})} />
+              </div>
+            </div>
             <div>
                  <label className="block text-gray-400 mb-1 text-sm">رابط صورة السيارة</label>
                  <input type="text" className="w-full bg-black-900 border border-white/10 rounded-lg p-3 text-white focus:border-gold-500 outline-none" 

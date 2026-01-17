@@ -120,7 +120,7 @@ const Dashboard: React.FC<DashboardProps> = ({ cars = [], rentals = [], history 
                         <div className="flex justify-between items-center mt-4">
                             <div>
                                 <p className="text-[9px] text-gray-500 uppercase font-bold tracking-widest mb-0.5">السعر الأساسي</p>
-                                <p className="text-base font-bold text-gold-500">{car.dailyRate} د.أ</p>
+                                <p className="text-base font-bold text-gold-500">{car.dailyRate} د.ا</p>
                             </div>
                             <div className="text-left">
                                 <p className="text-[9px] text-gray-500 uppercase font-bold tracking-widest mb-0.5">العداد</p>

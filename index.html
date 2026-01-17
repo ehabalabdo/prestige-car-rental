@@ -57,22 +57,41 @@
       
       /* Print Styles */
       @media print {
+        @page {
+          size: A4;
+          margin: 10mm;
+        }
+        
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        
+        body {
+          background: white !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        
         body * {
-          visibility: hidden;
+          visibility: hidden !important;
         }
-        .print-area, .print-area * {
-          visibility: visible;
-        }
-        .print-area {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          background: white;
-          color: black;
-        }
+        
         .no-print {
           display: none !important;
+        }
+        
+        .print-area,
+        .print-area * {
+          visibility: visible !important;
+        }
+        
+        .print-area {
+          display: block !important;
+          position: static !important;
+          width: 100% !important;
+          background: white !important;
+          color: black !important;
         }
       }
     </style>

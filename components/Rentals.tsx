@@ -4,7 +4,7 @@ import { generateId, formatCurrency, calculateDays, getRentalDisplayStatus, getS
 import { formatDateNumeric } from '@/utils/date';
 
 import { User, Phone, Clock, ArrowRightLeft, AlertCircle, Gauge, PlusCircle, Banknote, Camera } from 'lucide-react';
-import { toPng } from 'html-to-image';
+import html2canvas from 'html2canvas';
 import Modal from './Modal';
 
 interface RentalsProps {
@@ -36,10 +36,18 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [startDate, setStartDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [startTime, setStartTime] = useState<string>(() => {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  });
   const [endDate, setEndDate] = useState<string>(() => {
     const d = new Date();
     d.setDate(d.getDate() + 1);
     return d.toISOString().split('T')[0];
+  });
+  const [endTime, setEndTime] = useState<string>(() => {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   });
   const [manualDailyRate, setManualDailyRate] = useState(0);
   const [extensionDays, setExtensionDays] = useState(1);
@@ -167,7 +175,9 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
         nationalId: '000'
       },
       startDate: start.toISOString(),
+      startTime: startTime,
       expectedEndDate: end.toISOString(),
+      expectedEndTime: endTime,
       startMileage: Number(startMileage),
       baseCost,
       fines: [],
@@ -241,6 +251,10 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
     tomorrow.setDate(today.getDate() + 1);
     setStartDate(today.toISOString().split('T')[0]);
     setEndDate(tomorrow.toISOString().split('T')[0]);
+    const now = new Date();
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    setStartTime(currentTime);
+    setEndTime(currentTime);
   };
 
   const rentalDays = calculateDays(new Date(startDate).toISOString(), new Date(endDate).toISOString());
@@ -327,11 +341,19 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
                 <div className="grid grid-cols-2 gap-4">
                     <div className="bg-black-900/30 p-3 rounded-xl">
                         <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">تاريخ البدء</p>
-                        <p className="text-xs text-white flex items-center gap-2"><Clock size={12} className="text-gold-500"/> {formatDateNumeric(rental.startDate)}</p>
+                        <p className="text-xs text-white flex items-center gap-2">
+                          <Clock size={12} className="text-gold-500"/> 
+                          {formatDateNumeric(rental.startDate)}
+                          {rental.startTime && <span className="text-gold-400 font-bold mr-1">{rental.startTime}</span>}
+                        </p>
                     </div>
                     <div className="bg-black-900/30 p-3 rounded-xl">
                         <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">تاريخ التسليم المتوقع</p>
-                        <p className="text-xs text-white flex items-center gap-2"><Clock size={12} className="text-red-500"/> {formatDateNumeric(rental.expectedEndDate)}</p>
+                        <p className="text-xs text-white flex items-center gap-2">
+                          <Clock size={12} className="text-red-500"/> 
+                          {formatDateNumeric(rental.expectedEndDate)}
+                          {rental.expectedEndTime && <span className="text-red-400 font-bold mr-1">{rental.expectedEndTime}</span>}
+                        </p>
                     </div>
                 </div>
 
@@ -376,14 +398,21 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
                           wrapper.appendChild(cloned);
                           document.body.appendChild(wrapper);
                           try {
-                            const dataUrl = await toPng(wrapper, { cacheBust: true, pixelRatio: 2 });
+                            const canvas = await html2canvas(wrapper, {
+                              scale: 2,
+                              backgroundColor: '#0b0b0f',
+                              logging: false,
+                              allowTaint: true,
+                              useCORS: true
+                            });
+                            const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
                             const a = document.createElement('a');
                             a.href = dataUrl;
-                            a.download = `Invoice_${rental.id}.png`;
+                            a.download = `Invoice_${rental.id}.jpg`;
                             a.click();
                           } catch (err) {
                             console.error('capture failed', err);
-                            alert('حدث خطأ أثناء التقاط الصورة');
+                            alert('حدث خطأ أثناء التقاط الصورة: ' + (err as Error).message);
                           } finally {
                             document.body.removeChild(wrapper);
                           }
@@ -525,9 +554,21 @@ const Rentals: React.FC<RentalsProps> = ({ cars, rentals, onRentCar, onReturnCar
                   value={startDate} onChange={e => setStartDate(e.target.value)} />
               </div>
               <div>
+                <label className="block text-gray-400 mb-1 text-sm">ساعة الاستلام</label>
+                <input required type="time" className="w-full bg-black-900 border border-white/10 rounded-lg p-3 text-white focus:border-gold-500 outline-none" 
+                  value={startTime} onChange={e => setStartTime(e.target.value)} />
+              </div>
+              <div>
                 <label className="block text-gray-400 mb-1 text-sm">تاريخ التسليم</label>
                 <input required type="date" className="w-full bg-black-900 border border-white/10 rounded-lg p-3 text-white focus:border-gold-500 outline-none" 
                   value={endDate} onChange={e => setEndDate(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-gray-400 mb-1 text-sm">ساعة التسليم</label>
+                <input required type="time" className="w-full bg-black-900 border border-white/10 rounded-lg p-3 text-white focus:border-gold-500 outline-none" 
+                  value={endTime} onChange={e => setEndTime(e.target.value)} />
               </div>
                 <div>
                     <label className="block text-gray-400 mb-1 text-sm">السعر اليومي المتفق</label>

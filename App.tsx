@@ -8,7 +8,7 @@ import Maintenance from './components/Maintenance';
 import Availability from './components/Availability';
 import InvoicePrint from './components/InvoicePrint';
 import { Menu } from 'lucide-react';
-import { Car, Rental, CarStatus, RentalStatus } from './types';
+import { Car, Rental, CarStatus, RentalStatus, MaintenanceRecord } from './types';
 import { getInitialData, formatCurrency, calculateDays } from './utils';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase';
@@ -214,6 +214,40 @@ const App: React.FC = () => {
     }
   };
 
+  const addMaintenanceRecord = (carId: string, record: MaintenanceRecord) => {
+    const updatedCars = cars.map(c => {
+      if (c.id === carId) {
+        return {
+          ...c,
+          maintenanceHistory: [...(c.maintenanceHistory || []), record]
+        };
+      }
+      return c;
+    });
+    setCars(updatedCars);
+    const updatedCar = updatedCars.find(c => c.id === carId);
+    if (updatedCar && isAuthenticated) {
+      updateCarInFirestore(updatedCar).catch(err => console.warn('Failed to add maintenance record:', err));
+    }
+  };
+
+  const deleteMaintenanceRecord = (carId: string, recordId: string) => {
+    const updatedCars = cars.map(c => {
+      if (c.id === carId) {
+        return {
+          ...c,
+          maintenanceHistory: (c.maintenanceHistory || []).filter(r => r.id !== recordId)
+        };
+      }
+      return c;
+    });
+    setCars(updatedCars);
+    const updatedCar = updatedCars.find(c => c.id === carId);
+    if (updatedCar && isAuthenticated) {
+      updateCarInFirestore(updatedCar).catch(err => console.warn('Failed to delete maintenance record:', err));
+    }
+  };
+
   const createRental = (rental: Rental) => {
     // CRITICAL: Check for date overlap with existing rentals
     const newStart = new Date(rental.startDate);
@@ -411,7 +445,7 @@ const App: React.FC = () => {
           )}
           {activeTab === 'availability' && <Availability cars={cars} rentals={rentals} />}
           {activeTab === 'history' && <History history={history} cars={cars} />}
-          {activeTab === 'maintenance' && <Maintenance cars={cars} />}
+          {activeTab === 'maintenance' && <Maintenance cars={cars} onAddMaintenanceRecord={addMaintenanceRecord} onDeleteMaintenanceRecord={deleteMaintenanceRecord} />}
         </div>
       </main>
       

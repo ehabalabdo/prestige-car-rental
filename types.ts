@@ -4,6 +4,14 @@ export enum CarStatus {
   MAINTENANCE = 'صيانة'
 }
 
+export interface MaintenanceRecord {
+  id: string;
+  date: string; // ISO String
+  description: string;
+  cost: number;
+  mileage?: number;
+}
+
 export interface Car {
   id: string;
   make: string;
@@ -18,6 +26,9 @@ export interface Car {
   lastMaintenanceMileage?: number; // mileage at last service
   image: string;
   status: CarStatus;
+  maintenanceHistory?: MaintenanceRecord[];
+  insuranceStartDate?: string; // ISO String
+  insuranceEndDate?: string; // ISO String
 }
 
 export interface Customer {
@@ -37,8 +48,11 @@ export interface Rental {
   carId: string;
   customer: Customer;
   startDate: string; // ISO String
+  startTime?: string; // Time in HH:mm format
   expectedEndDate: string; // ISO String
+  expectedEndTime?: string; // Time in HH:mm format
   actualEndDate?: string; // ISO String
+  actualEndTime?: string; // Time in HH:mm format
   startMileage: number;
   endMileage?: number;
   baseCost: number;
