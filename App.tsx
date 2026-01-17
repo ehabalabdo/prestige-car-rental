@@ -8,7 +8,6 @@ import Maintenance from './components/Maintenance';
 import Availability from './components/Availability';
 import InvoicePrint from './components/InvoicePrint';
 import Notifications from './components/Notifications';
-import LogoUpload from './components/LogoUpload';
 import { Menu, Bell, Sun, Moon } from 'lucide-react';
 import { Car, Rental, CarStatus, RentalStatus, MaintenanceRecord } from './types';
 import { getInitialData, formatCurrency, calculateDays } from './utils';
@@ -106,7 +105,6 @@ const App: React.FC = () => {
     const saved = localStorage.getItem('theme');
     return saved !== 'light';
   });
-  const [isLogoUploadOpen, setIsLogoUploadOpen] = useState(false);
   const [customLogo, setCustomLogo] = useState<string | null>(() => {
     return localStorage.getItem('prestige_logo');
   });
@@ -421,7 +419,6 @@ const App: React.FC = () => {
         onNotificationsClick={() => setIsNotificationsOpen(true)}
         onThemeToggle={() => setIsDarkMode(!isDarkMode)}
         isDarkMode={isDarkMode}
-        onLogoUploadClick={() => setIsLogoUploadOpen(true)}
         customLogo={customLogo}
         notificationCount={(() => {
           const maintenanceCount = cars.filter(car => {
@@ -578,13 +575,6 @@ const App: React.FC = () => {
         cars={cars}
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
-      />
-
-      {/* Logo Upload Modal */}
-      <LogoUpload 
-        isOpen={isLogoUploadOpen}
-        onClose={() => setIsLogoUploadOpen(false)}
-        onLogoChange={(logo) => setCustomLogo(logo)}
       />
     </div>
   );

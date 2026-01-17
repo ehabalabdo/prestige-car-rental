@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Car, Key, History, Wrench, LogOut, X, ShieldCheck, Calendar, Bell, Sun, Moon, Upload } from 'lucide-react';
+import { LayoutDashboard, Car, Key, History, Wrench, LogOut, X, ShieldCheck, Calendar, Bell, Sun, Moon } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -11,12 +11,11 @@ interface SidebarProps {
   onNotificationsClick?: () => void;
   onThemeToggle?: () => void;
   isDarkMode?: boolean;
-  onLogoUploadClick?: () => void;
   notificationCount?: number;
   customLogo?: string | null;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onLogout, onReset, isOpen, onClose, onNotificationsClick, onThemeToggle, isDarkMode, onLogoUploadClick, notificationCount = 0, customLogo }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onLogout, onReset, isOpen, onClose, onNotificationsClick, onThemeToggle, isDarkMode, notificationCount = 0, customLogo }) => {
   const menuItems = [
     { id: 'dashboard', label: 'الرئيسية', icon: <LayoutDashboard size={20} /> },
     { id: 'fleet', label: 'الأسطول', icon: <Car size={20} /> },
@@ -101,15 +100,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onLogout, on
         </nav>
 
         <div className="p-4 border-t border-white/10 bg-black-800/50 space-y-2">
-          {onLogoUploadClick && (
-            <button 
-              onClick={onLogoUploadClick}
-              className="w-full flex items-center gap-4 px-4 py-3 text-purple-400 hover:bg-purple-500/10 rounded-lg transition-colors text-sm"
-            >
-              <Upload size={18} />
-              <span>تحميل الشعار</span>
-            </button>
-          )}
           {onNotificationsClick && (
             <button 
               onClick={onNotificationsClick}
